@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="tg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>Salomat AI Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a0a; --sidebar-bg: #111111; --surface: #1a1a1a;
+            --surface-hover: #242424; --blue: #1264ff; --blue2: #0b52d6;
+            --text: #e8e8e8; --text-secondary: #8e8ea0; --border: #2a2a2a;
+            --shadow: rgba(0,0,0,0.8); --input-bg: #1a1a1a;
+            --hover-bg: rgba(18,100,255,0.08); --welcome-text: #8e8ea0;
+            --msg-user: #1a1a1a; --msg-ai: #111111;
+            --msg-user-text: #e8e8e8; --msg-ai-text: #e8e8e8;
+            --bubble-radius: 12px; --font-size: 14px;
+            --accent-glow: rgba(18,100,255,0.15);
+        }
+        [data-theme="light"] {
+            --bg: #f7f7f8; --sidebar-bg: #ffffff; --surface: #ececec;
+            --surface-hover: #d9d9d9; --text: #1a1a1a;
+            --text-secondary: #6e6e80; --border: #d0d0d0;
+            --shadow: rgba(0,0,0,0.08); --input-bg: #ffffff;
+            --hover-bg: rgba(18,100,255,0.06); --welcome-text: #6e6e80;
+            --msg-user: #e8e8e8; --msg-ai: #ffffff;
+            --msg-user-text: #1a1a1a; --msg-ai-text: #1a1a1a;
+            --accent-glow: rgba(18,100,255,0.1);
+        }
+        [data-font="small"] { --font-size: 12px; }
+        [data-font="medium"] { --font-size: 14px; }
+        [data-font="large"] { --font-size: 16px; }
+        [data-font="xlarge"] { --font-size: 18px; }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: var(--bg); color: var(--text);
+            height: 100dvh; display: flex; flex-direction: column;
+            overflow: hidden; transition: background 0.3s ease, color 0.3s ease;
+            font-size: var(--font-size); -webkit-tap-highlight-color: transparent;
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+        #overlay { display: none; position: fixed; inset: 0; background: var(--shadow); z-index: 100; }
+        #overlay.open { display: block; }
+
+        #sidebar {
+            position: fixed; top: 0; left: 0; height: 100%; width: 300px;
+            background: var(--sidebar-bg); z-index: 200;
+            transform: translateX(-100%); transition: transform 0.3s ease;
+            display: flex; flex-direction: column;
+            border-right: 1px solid var(--border);
+        }
+        #sidebar.open { transform: translateX(0); }
+
+        .sidebar-header {
+            padding: 24px 20px 16px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .sidebar-logo { display: flex; align-items: center; gap: 12px; }
+        .sidebar-logo-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--blue), var(--blue2));
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 16px; color: white;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .sidebar-logo span { font-weight: 600; font-size: 16px; letter-spacing: -0.3px; }
+        #close-sidebar {
+            background: none; border: none; color: var(--text-secondary);
+            font-size: 20px; cursor: pointer; padding: 4px; border-radius: 6px;
+            transition: background 0.2s;
+        }
+        #close-sidebar:hover { background: var(--surface-hover); }
+
+        .sidebar-actions { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+        .new-chat-btn {
+            width: 100%; padding: 12px 16px; background: var(--blue);
+            border: none; border-radius: 10px; color: white;
+            font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            gap: 8px; transition: opacity 0.2s;
+        }
+        .new-chat-btn:hover { opacity: 0.85; }
+        .new-chat-btn.export-btn {
+            background: transparent; border: 1px solid var(--border);
+            color: var(--text); margin-top: 8px;
+        }
+        .new-chat-btn.export-btn:hover { background: var(--surface-hover); }
+        .new-chat-btn.delete-all-btn {
+            background: transparent; border: 1px solid #cc3b3b;
+            color: #cc3b3b; margin-top: 8px;
+        }
+        .new-chat-btn.delete-all-btn:hover { background: rgba(204,59,59,0.08); }
+
+        .sidebar-section { padding: 16px 20px 8px; }
+        .sidebar-section-title {
+            font-size: 11px; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+        }
+
+        #history-list { flex: 1; overflow-y: auto; padding: 0 12px 12px; }
+        .history-item-wrapper {
+            position: relative; margin-bottom: 2px; border-radius: 8px;
+            overflow: hidden; transition: all 0.3s ease;
+        }
+        .history-item {
+            padding: 10px 12px; border-radius: 8px; font-size: 13px;
+            color: var(--text-secondary); cursor: pointer; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+            transition: background 0.15s, color 0.15s;
+        }
+        .history-item:hover { background: var(--surface-hover); color: var(--text); }
+        .delete-chat-btn {
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            background: #cc3b3b; border: none; border-radius: 6px;
+            color: white; padding: 4px 10px; font-size: 11px;
+            cursor: pointer; opacity: 0; transition: opacity 0.3s ease;
+            font-family: 'Inter', sans-serif; font-weight: 500;
+        }
+        .history-item-wrapper.show-delete .delete-chat-btn { opacity: 1; }
+        .delete-chat-btn:hover { background: #aa2e2e; }
+        .history-item-wrapper.deleting { animation: slideOut 0.3s ease forwards; }
+        @keyframes slideOut {
+            0% { transform: translateX(0); opacity: 1; max-height: 50px; }
+            100% { transform: translateX(-100%); opacity: 0; max-height: 0; margin: 0; padding: 0; }
+        }
+
+        .sidebar-bottom { padding: 16px 20px; border-top: 1px solid var(--border); }
+        .settings-btn {
+            width: 100%; padding: 10px 16px; background: none;
+            border: 1px solid var(--border); border-radius: 10px;
+            color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px;
+            cursor: pointer; display: flex; align-items: center; gap: 8px;
+            transition: background 0.2s;
+        }
+        .settings-btn:hover { background: var(--surface-hover); }
+
+        header {
+            background: var(--bg); border-bottom: 1px solid var(--border);
+            padding: 12px 16px; display: flex; align-items: center;
+            gap: 12px; flex-shrink: 0; transition: background 0.3s ease;
+        }
+        #menu-btn {
+            background: none; border: none; color: var(--text);
+            cursor: pointer; padding: 6px; border-radius: 8px;
+            display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+        }
+        #menu-btn:hover { background: var(--surface-hover); }
+        #menu-btn span { display: block; width: 20px; height: 2px; background: var(--text); border-radius: 2px; }
+
+        .header-center { flex: 1; text-align: center; }
+        .header-title { font-size: 17px; font-weight: 600; letter-spacing: -0.5px; color: var(--text); }
+        .header-sub { font-size: 11px; color: var(--text-secondary); margin-top: 1px; font-weight: 400; }
+        .header-right { width: 32px; flex-shrink: 0; }
+
+        #messages { flex: 1; overflow-y: auto; padding: 16px 0; display: flex; flex-direction: column; }
+
+        .welcome {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 40px 24px; text-align: center; animation: fadeIn 0.6s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        .welcome-logo {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #1264ff, #0b52d6);
+            border-radius: 24px; display: flex; align-items: center; justify-content: center;
+            font-size: 36px; font-weight: 700; color: white;
+            margin-bottom: 24px; box-shadow: 0 8px 40px rgba(18,100,255,0.25);
+            font-family: 'JetBrains Mono', monospace; position: relative;
+        }
+        .welcome-logo::after {
+            content: ''; position: absolute; inset: -3px;
+            border-radius: 27px; background: linear-gradient(135deg, rgba(18,100,255,0.3), transparent);
+            z-index: -1;
+        }
+        .welcome h2 { font-size: 24px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .welcome-greeting { font-size: 15px; color: var(--welcome-text); line-height: 1.6; max-width: 400px; }
+        .welcome-greeting strong { color: var(--blue); }
+
+        .suggestions {
+            display: flex; flex-direction: column; gap: 8px;
+            margin-top: 28px; width: 100%; max-width: 360px;
+        }
+        .suggestion-btn {
+            padding: 12px 16px; background: var(--surface);
+            border: 1px solid var(--border); border-radius: 10px;
+            color: var(--text); font-family: 'Inter', sans-serif;
+            font-size: 13px; cursor: pointer; text-align: left;
+            transition: all 0.2s; position: relative;
+        }
+        .suggestion-btn:hover { border-color: var(--blue); background: var(--hover-bg); }
+        .suggestion-btn:active { transform: scale(0.98); }
+        .suggestion-btn.loading { opacity: 0.6; pointer-events: none; }
+        .suggestion-btn .spinner {
+            display: none; position: absolute; right: 12px;
+            top: 50%; transform: translateY(-50%);
+            width: 16px; height: 16px;
+            border: 2px solid var(--border);
+            border-top: 2px solid var(--blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .suggestion-btn.loading .spinner { display: block; }
+        @keyframes spin { 0% { transform: translateY(-50%) rotate(0deg); } 100% { transform: translateY(-50%) rotate(360deg); } }
+
+        .msg-row { padding: 4px 20px; animation: fadeIn 0.3s ease; display: flex; gap: 12px; }
+        .msg-row.user { justify-content: flex-end; }
+        .msg-row.ai { justify-content: flex-start; gap: 12px; }
+
+        .ai-avatar {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, var(--blue), var(--blue2));
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; color: white;
+            flex-shrink: 0; margin-top: 2px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .bubble {
+            max-width: 80%; padding: 12px 16px;
+            border-radius: var(--bubble-radius);
+            font-size: var(--font-size);
+            line-height: 1.7; word-break: break-word;
+            position: relative;
+        }
+        .msg-row.user .bubble {
+            background: var(--msg-user); color: var(--msg-user-text);
+            border-radius: 12px 12px 4px 12px;
+        }
+        .msg-row.ai .bubble {
+            background: var(--msg-ai); color: var(--msg-ai-text);
+            border-radius: 12px 12px 12px 4px;
+            padding: 12px 16px;
+            max-width: calc(100% - 52px);
+            white-space: pre-wrap;
+        }
+
+        .msg-row .bubble .time {
+            font-size: 10px; color: var(--text-secondary);
+            margin-top: 4px; display: block; text-align: right; opacity: 0.6;
+        }
+        .bubble a { color: var(--blue); text-decoration: underline; cursor: pointer; }
+        .bubble a:hover { opacity: 0.8; }
+        .bubble p { margin-bottom: 8px; }
+        .bubble ul, .bubble ol { padding-left: 20px; margin-bottom: 8px; }
+        .bubble h1, .bubble h2, .bubble h3 { margin: 12px 0 6px 0; font-weight: 600; }
+        .bubble blockquote { border-left: 3px solid var(--blue); padding-left: 12px; margin: 8px 0; color: var(--text-secondary); }
+        .bubble code { background: var(--surface-hover); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.9em; }
+        .bubble pre { background: var(--surface-hover); padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; border: 1px solid var(--border); }
+        .bubble pre code { background: none; padding: 0; }
+
+        .typing-cursor { display: inline-block; width: 2px; height: 1em; background: var(--blue); margin-left: 2px; animation: blink 0.8s infinite; vertical-align: text-bottom; }
+        @keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }
+
+        .typing-dots { display: flex; gap: 5px; padding: 8px 4px; }
+        .typing-dots span { width: 7px; height: 7px; background: var(--text-secondary); border-radius: 50%; animation: bounce 1.2s infinite; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%,60%,100% { transform: translateY(0); opacity: 0.3; } 30% { transform: translateY(-6px); opacity: 1; } }
+
+        .generated-img { max-width: 100%; border-radius: 12px; margin-top: 8px; display: block; border: 1px solid var(--border); }
+
+        .voice-btn { margin-top: 6px; padding: 4px 12px; background: rgba(18,100,255,0.12); border: 1px solid var(--blue); border-radius: 16px; color: var(--blue); font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: 'Inter', sans-serif; }
+        .voice-btn:hover { background: rgba(18,100,255,0.2); }
+
+        .message-actions { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--border); }
+        .message-actions .action-btn { width: 30px; height: 30px; background: none; border: none; border-radius: 50%; color: var(--text-secondary); font-size: 15px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+        .message-actions .action-btn:hover { background: var(--surface-hover); color: var(--text); }
+        .message-actions .action-btn.copied { color: var(--blue); background: rgba(18,100,255,0.12); }
+        .message-actions .action-btn.loading-action { animation: spin 0.8s linear infinite; }
+
+        .msg-row.user .bubble { position: relative; }
+        .edit-btn {
+            position: absolute; top: 4px; right: 4px;
+            background: none; border: none;
+            color: var(--text-secondary); font-size: 13px;
+            cursor: pointer; opacity: 0;
+            transition: opacity 0.2s; padding: 4px;
+            border-radius: 4px;
+        }
+        .msg-row.user:hover .edit-btn { opacity: 0.5; }
+        .edit-btn:hover { opacity: 1 !important; background: var(--surface-hover); }
+
+        .edit-mode textarea { width: 100%; background: var(--surface-hover); border: 1px solid var(--blue); border-radius: 10px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; padding: 8px 12px; resize: vertical; outline: none; }
+        .edit-mode .edit-actions { display: flex; gap: 6px; margin-top: 6px; }
+        .edit-mode .edit-actions button { padding: 4px 12px; border: none; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+        .edit-mode .edit-actions .save-edit { background: var(--blue); color: white; }
+        .edit-mode .edit-actions .save-edit:hover { opacity: 0.85; }
+        .edit-mode .edit-actions .cancel-edit { background: var(--surface-hover); color: var(--text-secondary); }
+        .edit-mode .edit-actions .cancel-edit:hover { background: var(--border); }
+
+        .input-area { padding: 12px 16px 20px; background: var(--bg); flex-shrink: 0; transition: background 0.3s ease; }
+        .input-toolbar { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+        .tool-btn { padding: 4px 10px; background: transparent; border: 1px solid var(--border); border-radius: 16px; color: var(--text-secondary); font-family: 'Inter', sans-serif; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+        .tool-btn:hover, .tool-btn.active { border-color: var(--blue); color: var(--blue); background: var(--hover-bg); }
+        .tool-btn.listening { border-color: #e53e3e; color: #e53e3e; background: rgba(229,62,62,0.08); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+
+        .input-wrap { display: flex; align-items: flex-end; gap: 8px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; padding: 8px 8px 8px 16px; transition: border-color 0.2s; }
+        .input-wrap:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--accent-glow); }
+        textarea { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px; resize: none; max-height: 120px; min-height: 24px; line-height: 1.5; padding: 3px 0; }
+        textarea::placeholder { color: var(--text-secondary); }
+
+        #send-btn { width: 36px; height: 36px; background: var(--blue); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.15s, transform 0.15s; }
+        #send-btn:hover { opacity: 0.85; }
+        #send-btn:active { transform: scale(0.92); }
+        #send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+        #send-btn svg { width: 16px; height: 16px; fill: white; }
+
+        .input-hint { text-align: center; font-size: 10px; color: var(--text-secondary); margin-top: 8px; opacity: 0.5; letter-spacing: 0.3px; }
+        #file-input { display: none; }
+        .file-preview { display: inline-block; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; margin: 4px 0; font-size: 12px; color: var(--text-secondary); }
+        .file-preview span { margin-right: 6px; }
+
+        #settings-modal { display: none; position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+        #settings-modal.open { display: flex; }
+        .modal-box { background: var(--sidebar-bg); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 420px; padding: 24px; transition: background 0.3s ease; max-height: 90vh; overflow-y: auto; }
+        .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; letter-spacing: -0.3px; }
+        .setting-row { margin-bottom: 16px; }
+        .setting-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; display: block; font-weight: 500; }
+        .setting-input { width: 100%; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: background 0.3s ease; }
+        .setting-input:focus { border-color: var(--blue); }
+
+        .modal-btns { display: flex; gap: 8px; margin-top: 20px; }
+        .modal-cancel { flex: 1; padding: 10px; background: none; border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; cursor: pointer; transition: background 0.2s; }
+        .modal-cancel:hover { background: var(--surface-hover); }
+        .modal-save { flex: 1; padding: 10px; background: var(--blue); border: none; border-radius: 10px; color: white; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; }
+        .modal-save:hover { opacity: 0.85; }
+
+        .print-speed-control { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+        .print-speed-control label { font-size: 12px; color: var(--text-secondary); }
+        .print-speed-control input[type="range"] { flex: 1; accent-color: var(--blue); background: var(--surface); height: 4px; border-radius: 2px; outline: none; }
+        .print-speed-control span { font-size: 12px; color: var(--text); min-width: 35px; }
+
+        .switch-container { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+        .switch { position: relative; width: 44px; height: 24px; background: var(--surface); border-radius: 12px; cursor: pointer; transition: background 0.3s; border: 1px solid var(--border); flex-shrink: 0; }
+        .switch.active { background: var(--blue); border-color: var(--blue); }
+        .switch .slider { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: transform 0.3s; }
+        .switch.active .slider { transform: translateX(20px); }
+
+        .mode-selector, .lang-selector, .font-selector { display: flex; gap: 4px; flex-wrap: wrap; }
+        .mode-btn, .lang-btn, .font-btn { padding: 4px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 11px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+        .mode-btn:hover, .lang-btn:hover, .font-btn:hover { border-color: var(--blue); color: var(--blue); }
+        .mode-btn.active, .lang-btn.active, .font-btn.active { border-color: var(--blue); background: var(--hover-bg); color: var(--blue); }
+
+        .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-label { color: var(--text-secondary); }
+        .stat-value { color: var(--text); font-weight: 500; }
+
+        .danger-btn { width: 100%; padding: 10px; background: #cc3b3b; border: none; border-radius: 10px; color: white; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+        .danger-btn:hover { background: #aa2e2e; }
+
+        @media (max-width: 480px) {
+            .modal-box { padding: 16px; max-width: 100%; }
+            .input-toolbar { gap: 4px; }
+            .tool-btn { font-size: 10px; padding: 3px 8px; }
+            .message-actions .action-btn { width: 26px; height: 26px; font-size: 13px; }
+            .bubble { max-width: 92%; }
+            .msg-row.ai .bubble { max-width: calc(100% - 44px); }
+            .welcome-logo { width: 64px; height: 64px; font-size: 28px; }
+            .welcome h2 { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="overlay" onclick="closeSidebar()"></div>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">S</div>
+                <span>Salomat AI</span>
+            </div>
+            <button id="close-sidebar" onclick="closeSidebar()">✕</button>
+        </div>
+        <div class="sidebar-actions">
+            <button class="new-chat-btn" onclick="newChat()">＋ Чати нав</button>
+            <button class="new-chat-btn export-btn" onclick="exportChat()">⬇ Нигоҳ доштани чат</button>
+            <button class="new-chat-btn delete-all-btn" onclick="deleteAllChats()">✕ Ҳамаро нест кардан</button>
+            <button class="new-chat-btn" onclick="openTajikistanPlaces()" style="margin-top:8px;background:#1264ff">Ҷойҳои Тоҷикистон</button>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Таърихи суҳбатҳо</div>
+        </div>
+        <div id="history-list"></div>
+        <div class="sidebar-bottom">
+            <button class="settings-btn" onclick="openSettings()">⚙ Танзимот</button>
+        </div>
+    </div>
+
+    <div id="settings-modal">
+        <div class="modal-box">
+            <div class="modal-title">Танзимот</div>
+
+            <div class="setting-row">
+                <div class="setting-label">Ном</div>
+                <input class="setting-input" id="name-input" placeholder="Номи шумо" />
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label">Забон</div>
+                <div class="lang-selector">
+                    <button class="lang-btn" data-lang="ru" onclick="setLanguage('ru')">Русӣ</button>
+                    <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">English</button>
+                    <button class="lang-btn active" data-lang="tj" onclick="setLanguage('tj')">Тоҷикӣ</button>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label">Тема</div>
+                <div class="switch-container">
+                    <span style="font-size:13px;color:var(--text-secondary)">Торик</span>
+                    <div class="switch active" id="theme-switch" onclick="toggleTheme()">
+                        <div class="slider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label">Андозаи ҳарф</div>
+                <div class="font-selector">
+                    <button class="font-btn" data-font="small" onclick="setFontSize('small')">М</button>
+                    <button class="font-btn active" data-font="medium" onclick="setFontSize('medium')">С</button>
+                    <button class="font-btn" data-font="large" onclick="setFontSize('large')">Б</button>
+                    <button class="font-btn" data-font="xlarge" onclick="setFontSize('xlarge')">О</button>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label">Услуб</div>
+                <div class="mode-selector">
+                    <button class="mode-btn active" data-mode="friendly" onclick="setMode('friendly')">Дӯстона</button>
+                    <button class="mode-btn" data-mode="scientist" onclick="setMode('scientist')">Илмӣ</button>
+                    <button class="mode-btn" data-mode="funny" onclick="setMode('funny')">Шӯх</button>
+                    <button class="mode-btn" data-mode="brief" onclick="setMode('brief')">Кӯтоҳ</button>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label">Намоиши матн</div>
+                <div class="switch-container">
+                    <span style="font-size:13px;color:var(--text-secondary)">Фаъол кардан</span>
+                    <div class="switch active" id="print-switch" onclick="togglePrintingSwitch()">
+                        <div class="slider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-row" id="speed-row">
+                <div class="setting-label">Суръати навишт</div>
+                <div class="print-speed-control">
+                    <label>⌛</label>
+                    <input type="range" id="speed-slider" min="5" max="50" value="12" />
+                    <label>⚡</label>
+                    <span id="speed-label">12ms</span>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label">Садо</div>
+                <div class="switch-container">
+                    <span style="font-size:13px;color:var(--text-secondary)">Фаъол кардан</span>
+                    <div class="switch active" id="sound-switch" onclick="toggleSound()">
+                        <div class="slider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label">Омор</div>
+                <div class="stat-row">
+                    <span class="stat-label">Паёмҳо</span>
+                    <span class="stat-value" id="total-messages">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Суҳбатҳо</span>
+                    <span class="stat-value" id="total-chats">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Услуб</span>
+                    <span class="stat-value" id="current-mode-display">Дӯстона</span>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label">Махфият</div>
+                <button class="danger-btn" onclick="clearAllData()">✕ Пок кардани ҳамаи маълумот</button>
+                <p style="font-size:10px;color:var(--text-secondary);margin-top:6px;">Ҳамаи суҳбатҳо ва таърихро нест мекунад</p>
+            </div>
+
+            <div class="modal-btns">
+                <button class="modal-cancel" onclick="closeSettings()">Пӯшидан</button>
+                <button class="modal-save" onclick="saveSettings()">Нигоҳ доштан</button>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <button id="menu-btn" onclick="openSidebar()">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="header-center">
+            <div class="header-title">Salomat AI</div>
+            <div class="header-sub" id="mode-display">Дӯстона</div>
+        </div>
+        <div class="header-right"></div>
+    </header>
+
+    <div id="messages">
+        <div class="welcome" id="welcome">
+            <div class="welcome-logo">S</div>
+            <h2>Salomat AI</h2>
+            <div class="welcome-greeting">
+                Салом, <strong id="greeting-name">дӯст</strong><br>
+                Имрӯз дар чӣ кор ба шумо ёрӣ диҳам?
+            </div>
+            <div class="suggestions">
+                <button class="suggestion-btn" onclick="sendSuggestion('Придумай крутой ник для игры', this)">
+                    Лақаб пешниҳод кун
+                    <span class="spinner"></span>
+                </button>
+                <button class="suggestion-btn" onclick="sendSuggestion('Напиши код простого сайта', this)">
+                    Рамзи сомона
+                    <span class="spinner"></span>
+                </button>
+                <button class="suggestion-btn" onclick="sendSuggestion('Какой сейчас день?', this)">
+                    Вақт ва сана
+                    <span class="spinner"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-toolbar">
+            <button class="tool-btn" id="img-mode-btn" onclick="toggleImgMode()">Эҷод</button>
+            <button class="tool-btn" id="voice-mode-btn" onclick="toggleVoice()">Хондани овозӣ</button>
+            <button class="tool-btn" id="mic-btn" onclick="toggleMicrophone()">Овоз</button>
+            <button class="tool-btn" id="search-btn" onclick="toggleSearchMode()">Ҷустуҷӯ</button>
+            <button class="tool-btn web-mode" id="web-btn" onclick="toggleWebMode()">Интернет</button>
+            <button class="tool-btn" onclick="document.getElementById('file-input').click()">Файл</button>
+        </div>
+        <div class="input-wrap">
+            <textarea id="input" placeholder="Паёми худро нависед..." rows="1"></textarea>
+            <button id="send-btn">
+                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </div>
+        <div id="file-preview-area" style="display:none; margin-top:6px;"></div>
+        <div class="input-hint">Файлы · Ссылки · Интернет · Овоз</div>
+    </div>
+
+    <input type="file" id="file-input" accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg,.gif" multiple onchange="handleFileUpload(event)">
+
+    <script>
+        // ========================================
+        // НОВЫЙ API КЛЮЧ (ТВОЙ!)
+        // ========================================
+        const API_KEY = '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';
+        const MODEL = 'openai/gpt-oss-120b';
+
+        let history = [];
+        let isLoading = false;
+        let imgMode = false;
+        let voiceEnabled = false;
+        let printingEnabled = true;
+        let printSpeed = 12;
+        let searchMode = false;
+        let webMode = false;
+        let soundEnabled = true;
+        let userName = localStorage.getItem('salomat_name') || '';
+        let chatHistories = JSON.parse(localStorage.getItem('salomat_histories') || '[]');
+        let recognition = null;
+        let isListening = false;
+        let currentChatId = null;
+        let uploadedFiles = [];
+        let currentMode = 'friendly';
+        let currentLanguage = 'tj';
+        let totalMessages = parseInt(localStorage.getItem('salomat_total_messages') || '0');
+        let deferredPrompt = null;
+
+        // ========================================
+        // ВРЕМЯ И ДАТЫ
+        // ========================================
+        const timezones = {
+            'душанбе': { timezone: 'Asia/Dushanbe', name: 'Душанбе' },
+            'москва': { timezone: 'Europe/Moscow', name: 'Москва' },
+            'таджикистан': { timezone: 'Asia/Dushanbe', name: 'Таджикистан' },
+            'россия': { timezone: 'Europe/Moscow', name: 'Россия' },
+            'нью-йорк': { timezone: 'America/New_York', name: 'Нью-Йорк' },
+            'сша': { timezone: 'America/New_York', name: 'США' },
+            'лондон': { timezone: 'Europe/London', name: 'Лондон' },
+            'дубай': { timezone: 'Asia/Dubai', name: 'Дубай' },
+            'токио': { timezone: 'Asia/Tokyo', name: 'Токио' },
+            'пекин': { timezone: 'Asia/Shanghai', name: 'Пекин' },
+            'берлин': { timezone: 'Europe/Berlin', name: 'Берлин' },
+            'париж': { timezone: 'Europe/Paris', name: 'Париж' },
+        };
+
+        function getCurrentTime(timezone = 'Asia/Dushanbe') {
+            try {
+                const now = new Date();
+                const options = {
+                    timeZone: timezone,
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'long',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                };
+                const formatter = new Intl.DateTimeFormat('ru-RU', options);
+                const parts = formatter.formatToParts(now);
+                let result = { date: '', time: '', weekday: '', month: '', day: '', year: '', full: '' };
+                parts.forEach(part => {
+                    if (part.type === 'weekday') result.weekday = part.value;
+                    if (part.type === 'day') result.day = part.value;
+                    if (part.type === 'month') result.month = part.value;
+                    if (part.type === 'year') result.year = part.value;
+                    if (part.type === 'hour' || part.type === 'minute' || part.type === 'second') {
+                        result.time += part.value;
+                        if (part.type === 'hour') result.time += ':';
+                        if (part.type === 'minute') result.time += ':';
+                    }
+                });
+                result.date = `${result.day} ${result.month} ${result.year}`;
+                result.full = `${result.weekday}, ${result.date}, ${result.time}`;
+                return result;
+            } catch(e) {
+                const now = new Date();
+                return {
+                    date: now.toLocaleDateString('ru-RU'),
+                    time: now.toLocaleTimeString('ru-RU'),
+                    weekday: now.toLocaleDateString('ru-RU', { weekday: 'long' }),
+                    month: now.toLocaleDateString('ru-RU', { month: 'long' }),
+                    day: now.getDate().toString(),
+                    year: now.getFullYear().toString(),
+                    full: now.toLocaleString('ru-RU')
+                };
+            }
+        }
+
+        function getTimeInfo(query) {
+            const lowerQuery = query.toLowerCase();
+            let detectedTimezone = 'Asia/Dushanbe';
+            let detectedName = 'Душанбе';
+            for (let [key, value] of Object.entries(timezones)) {
+                if (lowerQuery.includes(key)) {
+                    detectedTimezone = value.timezone;
+                    detectedName = value.name;
+                    break;
+                }
+            }
+            const time = getCurrentTime(detectedTimezone);
+            if (lowerQuery.includes('день') || lowerQuery.includes('дата') || lowerQuery.includes('сегодня') ||
+                lowerQuery.includes('какой сегодня')) {
+                return `Сегодня ${time.weekday}, ${time.date}\n\nТекущее время: ${time.time}\n${detectedName}`;
+            }
+            if (lowerQuery.includes('время') || lowerQuery.includes('час') || lowerQuery.includes('сколько')) {
+                return `Текущее время в ${detectedName}:\n\n${time.time}\n${time.weekday}, ${time.date}`;
+            }
+            if (lowerQuery.includes('день недели') || lowerQuery.includes('какой день')) {
+                return `Сегодня ${time.weekday}\n\n${detectedName}\n${time.date}`;
+            }
+            return `Информация о времени:\n\n${detectedName}\n${time.full}`;
+        }
+
+        // ========================================
+        // ПЕРЕВОДЫ
+        // ========================================
+        const translations = {
+            ru: {
+                welcome: 'Привет',
+                friend: 'дӯст',
+                help: 'Имрӯз дар чӣ кор ба шумо ёрӣ диҳам?',
+                placeholder: 'Паёми худро нависед...',
+                search_placeholder: 'Введи запрос для поиска...',
+                image_placeholder: 'Опиши что нарисовать...',
+                voice_placeholder: 'Говорите...',
+                no_history: 'Нет истории'
+            },
+            en: {
+                welcome: 'Hello',
+                friend: 'friend',
+                help: 'How can I help you today?',
+                placeholder: 'Type a message...',
+                search_placeholder: 'Enter search query...',
+                image_placeholder: 'Describe what to draw...',
+                voice_placeholder: 'Speak...',
+                no_history: 'No history'
+            },
+            tj: {
+                welcome: 'Салом',
+                friend: 'дӯст',
+                help: 'Имрӯз чӣ тавр метавонам ба ту кӯмак кунам?',
+                placeholder: 'Паём нависед...',
+                search_placeholder: 'Дархости ҷустуҷӯро ворид кунед...',
+                image_placeholder: 'Чиро кашиданро тавсиф кунед...',
+                voice_placeholder: 'Гӯед...',
+                no_history: 'Таърих нест'
+            }
+        };
+
+        function t(key) {
+            return translations[currentLanguage]?.[key] || translations.ru[key] || key;
+        }
+
+        // ========================================
+        // РЕЖИМЫ
+        // ========================================
+        const modeMap = {
+            friendly: 'Дӯстона',
+            scientist: 'Илмӣ',
+            funny: 'Шӯх',
+            brief: 'Кӯтоҳ'
+        };
+
+        const modeSystem = {
+            friendly: 'Ты дружелюбный помощник. Отвечай тепло и с заботой. Используй структурированные ответы, без лишних смайликов.',
+            scientist: 'Ты учёный. Отвечай точно, фактологично, со ссылками на данные. Строгий и информативный стиль.',
+            funny: 'Ты весёлый собеседник. Отвечай с юмором, но без смайликов. Используй иронию и остроумные формулировки.',
+            brief: 'Ты краткий помощник. Отвечай максимально коротко и по делу. Без лишних слов и воды.'
+        };
+
+        // Дастури маҳаллӣ: ҷавобҳои Тоҷикистон бояд дақиқ бошанд ва аз сохтакорӣ худдорӣ кунанд.
+        const TAJIKISTAN_CONTEXT = `Ту ёвари Salomat AI ҳастӣ, ки ба Тоҷикистон махсусан хуб хизмат мекунад. Ба саволҳо дар бораи Тоҷикистон бо забони интихобкардаи корбар ҷавоб деҳ. Номҳои ноҳияҳо, шаҳрҳо, дарёҳо, кӯҳҳо, ёдгориҳо ва масофаҳоро насоз. Агар маълумотро дақиқ намедонӣ, ошкоро бигӯ ва тахминро ҳамчун факт пешниҳод накун. Ҷойгоҳҳои маъмуриро омехта накун. Барои маълумоти тағйирёбанда сана ва манбаъро талаб кун. Тоҷикистонро аз рӯйи ҳамаи вилоятҳо, шаҳру ноҳияҳо, таърих, фарҳанг, забон, иқтисод, маориф, сайёҳӣ, роҳҳо, табиат ва ёдгориҳо фаро гир.`;
+
+        const CREATOR_INFO =
+            `Меня создал Ahunjanov Marufjon Севарвич — один из главных директоров компании Salomat AI. Он назвал компанию в честь имени своей бабушки — Ahunjanova Salomathon Юсупович. Официальный сайт: salomat.ai Instagram: @salomat.ai`;
+
+        // ========================================
+        // ФУНКЦИИ
+        // ========================================
+
+        function copyText(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                btn.textContent = '✓';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                btn.textContent = '✓';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        async function translateText(text, btn) {
+            btn.textContent = '⏳';
+            btn.classList.add('loading-action');
+            btn.disabled = true;
+            try {
+                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        messages: [
+                            { role: 'system', content: 'Ты переводчик. Переведи на русский язык. Без смайликов.' },
+                            { role: 'user', content: text }
+                        ],
+                        max_tokens: 1000,
+                        temperature: 0.3
+                    })
+                });
+                const data = await res.json();
+                if (data.choices?.[0]) {
+                    addMessage('ai', `Перевод:\n\n${data.choices[0].message.content}`);
+                    playNotification();
+                }
+            } catch(e) { addMessage('ai', 'Ошибка перевода.'); }
+            btn.textContent = '🌍';
+            btn.classList.remove('loading-action');
+            btn.disabled = false;
+        }
+
+        async function retellText(text, btn) {
+            btn.textContent = '⏳';
+            btn.classList.add('loading-action');
+            btn.disabled = true;
+            try {
+                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        messages: [
+                            { role: 'system', content: 'Сделай краткий пересказ текста. Без смайликов.' },
+                            { role: 'user', content: text }
+                        ],
+                        max_tokens: 500,
+                        temperature: 0.5
+                    })
+                });
+                const data = await res.json();
+                if (data.choices?.[0]) {
+                    addMessage('ai', `Пересказ:\n\n${data.choices[0].message.content}`);
+                    playNotification();
+                }
+            } catch(e) { addMessage('ai', 'Ошибка пересказа.'); }
+            btn.textContent = '🔄';
+            btn.classList.remove('loading-action');
+            btn.disabled = false;
+        }
+
+        async function explainText(text, btn) {
+            btn.textContent = '⏳';
+            btn.classList.add('loading-action');
+            btn.disabled = true;
+            try {
+                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        messages: [
+                            { role: 'system', content: 'Объясни подробно и понятно. Без смайликов.' },
+                            { role: 'user', content: text }
+                        ],
+                        max_tokens: 800,
+                        temperature: 0.7
+                    })
+                });
+                const data = await res.json();
+                if (data.choices?.[0]) {
+                    addMessage('ai', `Объяснение:\n\n${data.choices[0].message.content}`);
+                    playNotification();
+                }
+            } catch(e) { addMessage('ai', 'Ошибка объяснения.'); }
+            btn.textContent = '💡';
+            btn.classList.remove('loading-action');
+            btn.disabled = false;
+        }
+
+        // ========================================
+        // АНАЛИЗ ССЫЛОК
+        // ========================================
+        async function analyzeLink(url) {
+            try {
+                const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+                const html = await response.text();
+                const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+                const title = titleMatch ? titleMatch[1] : 'Не удалось определить';
+                const descMatch = html.match(/<meta\s+name=["']description["']\s+content=["'](.*?)["']/i);
+                const description = descMatch ? descMatch[1] : 'Нет описания';
+                const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+                const h1 = h1Match ? h1Match[1].replace(/<[^>]*>/g, '') : '';
+                return { success: true, title, description, h1, url };
+            } catch(e) {
+                return { success: false, error: 'Не удалось проанализировать ссылку.' };
+            }
+        }
+
+        async function analyzeAndAnswerLink(url) {
+            const result = await analyzeLink(url);
+            if (!result.success) return result.error;
+            let response = `Анализ ссылки:\n\n`;
+            response += `Заголовок: ${result.title}\n\n`;
+            if (result.h1) response += `H1: ${result.h1}\n\n`;
+            response += `Описание: ${result.description}\n\n`;
+            response += `URL: ${result.url}`;
+            return response;
+        }
+
+        // ========================================
+        // ВЕБ-СЕРФИНГ
+        // ========================================
+        async function webSurfing(query) {
+            try {
+                const wikiUrl =
+                    `https://ru.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`;
+                const wikiResponse = await fetch(wikiUrl);
+                const wikiData = await wikiResponse.json();
+                if (wikiData.query && wikiData.query.search && wikiData.query.search.length > 0) {
+                    const results = wikiData.query.search.slice(0, 3);
+                    let response = `Результаты поиска:\n\n`;
+                    results.forEach((item, index) => {
+                        response += `${index + 1}. ${item.title}\n`;
+                        response += `${item.snippet.replace(/<[^>]*>/g, '')}\n`;
+                        response += `https://ru.wikipedia.org/wiki/${encodeURIComponent(item.title)}\n\n`;
+                    });
+                    return response;
+                }
+                return `По запросу "${query}" ничего не найдено.`;
+            } catch(e) {
+                return 'Ошибка веб-серфинга.';
+            }
+        }
+
+        // ========================================
+        // ПОИСК
+        // ========================================
+        async function searchInternet(query) {
+            try {
+                const wikiUrl =
+                    `https://ru.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`;
+                const wikiResponse = await fetch(wikiUrl);
+                const wikiData = await wikiResponse.json();
+                if (wikiData.query && wikiData.query.search && wikiData.query.search.length > 0) {
+                    const result = wikiData.query.search[0];
+                    return {
+                        success: true,
+                        title: result.title,
+                        description: result.snippet.replace(/<[^>]*>/g, '') + '...',
+                        link: `https://ru.wikipedia.org/wiki/${encodeURIComponent(result.title)}`
+                    };
+                }
+                const ddgUrl =
+                    `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
+                const ddgResponse = await fetch(ddgUrl);
+                const ddgData = await ddgResponse.json();
+                if (ddgData.AbstractText) {
+                    return {
+                        success: true,
+                        title: ddgData.Heading || query,
+                        description: ddgData.AbstractText,
+                        link: ddgData.AbstractURL || `https://duckduckgo.com/?q=${encodeURIComponent(query)}`
+                    };
+                }
+                return { success: false, error: 'Информация не найдена.' };
+            } catch(e) {
+                return { success: false, error: 'Ошибка соединения.' };
+            }
+        }
+
+        async function searchAndAnswer(query) {
+            const result = await searchInternet(query);
+            if (!result.success) return result.error;
+            return `Результат поиска:\n\n${result.title}\n\n${result.description}\n\nИсточник: ${result.link}`;
+        }
+
+        // ========================================
+        // ЯЗЫК
+        // ========================================
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
+            localStorage.setItem('salomat_language', lang);
+            updateUI();
+        }
+
+        function setFontSize(size) {
+            document.documentElement.setAttribute('data-font', size);
+            document.querySelectorAll('.font-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.font === size));
+            localStorage.setItem('salomat_font_size', size);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-switch').classList.toggle('active', soundEnabled);
+            localStorage.setItem('salomat_sound_enabled', soundEnabled);
+        }
+
+        function playNotification() {
+            if (!soundEnabled) return;
+            try {
+                const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.frequency.value = 880;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.08;
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.08);
+            } catch(e) {}
+        }
+
+        function updateStats() {
+            if (document.getElementById('total-messages')) document.getElementById('total-messages').textContent = totalMessages;
+            if (document.getElementById('total-chats')) document.getElementById('total-chats').textContent = chatHistories.length;
+            if (document.getElementById('current-mode-display')) document.getElementById('current-mode-display').textContent = modeMap[currentMode];
+        }
+
+        function clearAllData() {
+            if (confirm('Вы уверены? Это удалит все данные!')) {
+                localStorage.clear();
+                chatHistories = [];
+                history = [];
+                totalMessages = 0;
+                localStorage.setItem('salomat_total_messages', '0');
+                renderHistory();
+                newChat();
+                updateStats();
+                alert('Все данные очищены!');
+            }
+        }
+
+        function deleteAllChats() {
+            if (confirm('Удалить все чаты?')) {
+                chatHistories = [];
+                localStorage.setItem('salomat_histories', JSON.stringify(chatHistories));
+                renderHistory();
+                newChat();
+                updateStats();
+            }
+        }
+
+        function exportChat() {
+            if (history.length === 0) {
+                alert('Нет сообщений для сохранения!');
+                return;
+            }
+            let text = '=== Salomat AI — Чат ===\n';
+            text += `Дата: ${new Date().toLocaleString()}\n`;
+            text += `Услуб: ${modeMap[currentMode]}\n`;
+            text += '===============================\n\n';
+            history.forEach(msg => {
+                const role = msg.role === 'user' ? 'Вы' : 'Salomat AI';
+                text += `${role}:\n${msg.content}\n\n`;
+            });
+            text += '===============================\n';
+            text += 'Сохранено с Salomat AI';
+
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `chat_${new Date().toISOString().slice(0, 10)}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
+            if (document.getElementById('mode-display')) document.getElementById('mode-display').textContent = modeMap[mode];
+            localStorage.setItem('salomat_mode', mode);
+            updateUI();
+        }
+
+        const savedLang = localStorage.getItem('salomat_language');
+        if (savedLang && translations[savedLang]) setLanguage(savedLang);
+
+        const savedFont = localStorage.getItem('salomat_font_size');
+        if (savedFont) setFontSize(savedFont);
+
+        const savedSound = localStorage.getItem('salomat_sound_enabled');
+        if (savedSound !== null) {
+            soundEnabled = savedSound === 'true';
+            if (!soundEnabled) document.getElementById('sound-switch').classList.remove('active');
+        }
+
+        const savedMode = localStorage.getItem('salomat_mode');
+        if (savedMode && modeMap[savedMode]) setMode(savedMode);
+
+        // ========================================
+        // ФАЙЛЫ
+        // ========================================
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            if (!files.length) return;
+            const area = document.getElementById('file-preview-area');
+            area.style.display = 'block';
+            area.innerHTML = '';
+            for (let file of files) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    uploadedFiles.push({ name: file.name, type: file.type, size: file.size, content, file });
+                    const preview = document.createElement('div');
+                    preview.className = 'file-preview';
+                    preview.innerHTML = `<span>📎</span> ${file.name} (${(file.size / 1024).toFixed(1)}KB)`;
+                    area.appendChild(preview);
+                    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+                        const textContent = reader.result;
+                        addMessage('user',
+                            `Загружен файл: ${file.name}\n\nСодержимое:\n${textContent.substring(0, 500)}${textContent.length > 500 ? '...' : ''}`
+                            );
+                        analyzeFileContent(textContent, file.name);
+                    } else if (file.type.startsWith('image/')) {
+                        addMessage('user', `Загружено изображение: ${file.name}`);
+                        analyzeImage(file);
+                    } else {
+                        addMessage('user', `Загружен файл: ${file.name}`);
+                        addMessage('ai', `Файл "${file.name}" загружен.`);
+                    }
+                };
+                if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+                    reader.readAsText(file);
+                } else if (file.type.startsWith('image/')) {
+                    reader.readAsDataURL(file);
+                } else {
+                    reader.readAsArrayBuffer(file);
+                }
+            }
+            event.target.value = '';
+        }
+
+        function analyzeFileContent(content, filename) {
+            showTypingIndicator();
+            const prompt = `Проанализируй файл: ${filename}\n${content.substring(0, 1000)}`;
+            setTimeout(async () => {
+                try {
+                    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+                        body: JSON.stringify({
+                            model: MODEL,
+                            messages: [
+                                { role: 'system', content: 'Ты помощник. Дай краткое резюме файла. Без смайликов.' },
+                                { role: 'user', content: prompt }
+                            ],
+                            max_tokens: 300,
+                            temperature: 0.7
+                        })
+                    });
+                    const data = await res.json();
+                    removeTypingIndicator();
+                    if (data.choices?.[0]) {
+                        addMessage('ai', `Анализ файла:\n\n${data.choices[0].message.content}`);
+                        playNotification();
+                    }
+                } catch(e) {
+                    removeTypingIndicator();
+                    addMessage('ai', 'Не удалось проанализировать файл.');
+                }
+            }, 300);
+        }
+
+        function analyzeImage(file) {
+            showTypingIndicator();
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+                        body: JSON.stringify({
+                            model: MODEL,
+                            messages: [
+                                { role: 'system', content: 'Опиши что на изображении. Без смайликов.' },
+                                { role: 'user', content: `Опиши изображение "${file.name}"` }
+                            ],
+                            max_tokens: 200,
+                            temperature: 0.7
+                        })
+                    });
+                    const data = await res.json();
+                    removeTypingIndicator();
+                    if (data.choices?.[0]) {
+                        addMessage('ai', `Описание изображения:\n\n${data.choices[0].message.content}`);
+                        playNotification();
+                    }
+                } catch(e) {
+                    removeTypingIndicator();
+                    addMessage('ai', 'Не удалось описать изображение.');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ========================================
+        // ТЕМА
+        // ========================================
+        let currentTheme = localStorage.getItem('salomat_theme') || 'dark';
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            const sw = document.getElementById('theme-switch');
+            if (theme === 'dark') sw.classList.add('active');
+            else sw.classList.remove('active');
+            localStorage.setItem('salomat_theme', theme);
+            currentTheme = theme;
+        }
+
+        function toggleTheme() {
+            applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        }
+        applyTheme(currentTheme);
+
+        // ========================================
+        // ГОЛОС
+        // ========================================
+        function initSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert('Ваш браузер не поддерживает голосовой ввод.');
+                return false;
+            }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ru-RU';
+            recognition.continuous = false;
+            recognition.interimResults = true;
+
+            recognition.onstart = function() {
+                isListening = true;
+                micBtn.classList.add('listening');
+                micBtn.innerHTML = '🔴 Слушаю...';
+                inputEl.placeholder = 'Говорите...';
+            };
+
+            recognition.onresult = function(event) {
+                let finalText = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
+                }
+                if (finalText) {
+                    inputEl.value = finalText;
+                    inputEl.placeholder = 'Паёми худро нависед...';
+                    setTimeout(() => { if (inputEl.value.trim()) sendMessage(); }, 300);
+                }
+            };
+
+            recognition.onerror = function() { stopListening(); };
+            recognition.onend = function() { stopListening(); };
+            return true;
+        }
+
+        function toggleMicrophone() {
+            if (!recognition && !initSpeechRecognition()) return;
+            if (isListening) stopListening();
+            else startListening();
+        }
+
+        function startListening() {
+            if (!recognition) return;
+            try { recognition.start(); } catch(e) {}
+        }
+
+        function stopListening() {
+            isListening = false;
+            micBtn.classList.remove('listening');
+            micBtn.innerHTML = 'Овоз';
+            if (inputEl.placeholder === 'Говорите...') {
+                inputEl.placeholder = 'Паёми худро нависед...';
+            }
+            if (recognition) try { recognition.stop(); } catch(e) {}
+        }
+
+        // ========================================
+        // ТОГЛЫ
+        // ========================================
+        function toggleWebMode() {
+            webMode = !webMode;
+            const btn = document.getElementById('web-btn');
+            btn.classList.toggle('active', webMode);
+            if (webMode) {
+                inputEl.placeholder = 'Введи запрос для веб-серфинга...';
+                searchMode = false;
+                document.getElementById('search-btn').classList.remove('active');
+                imgMode = false;
+                document.getElementById('img-mode-btn').classList.remove('active');
+            } else {
+                inputEl.placeholder = 'Паёми худро нависед...';
+            }
+        }
+
+        // ========================================
+        // ОСНОВНЫЕ ПЕРЕМЕННЫЕ
+        // ========================================
+        const messagesEl = document.getElementById('messages');
+        const inputEl = document.getElementById('input');
+        const sendBtn = document.getElementById('send-btn');
+        const micBtn = document.getElementById('mic-btn');
+
+        const savedSpeed = localStorage.getItem('salomat_print_speed');
+        if (savedSpeed) {
+            printSpeed = parseInt(savedSpeed);
+            document.getElementById('speed-slider').value = printSpeed;
+            if (document.getElementById('speed-label')) document.getElementById('speed-label').textContent = printSpeed + 'ms';
+        }
+
+        const savedPrinting = localStorage.getItem('salomat_printing_enabled');
+        if (savedPrinting !== null) {
+            printingEnabled = savedPrinting === 'true';
+            updatePrintSwitchUI();
+        }
+
+        if (userName && document.getElementById('greeting-name')) document.getElementById('greeting-name').textContent = userName;
+        renderHistory();
+        updateStats();
+        updateUI();
+
+        inputEl.addEventListener('input', () => {
+            inputEl.style.height = 'auto';
+            inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+        });
+        inputEl.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault();
+                sendMessage(); }
+        });
+        sendBtn.addEventListener('click', sendMessage);
+
+        document.getElementById('speed-slider').addEventListener('input', function() {
+            printSpeed = parseInt(this.value);
+            if (document.getElementById('speed-label')) document.getElementById('speed-label').textContent = printSpeed + 'ms';
+            localStorage.setItem('salomat_print_speed', printSpeed);
+        });
+
+        function togglePrintingSwitch() {
+            printingEnabled = !printingEnabled;
+            updatePrintSwitchUI();
+            localStorage.setItem('salomat_printing_enabled', printingEnabled);
+        }
+
+        function updatePrintSwitchUI() {
+            const sw = document.getElementById('print-switch');
+            if (printingEnabled) {
+                sw.classList.add('active');
+                document.getElementById('speed-row').style.display = 'block';
+            } else {
+                sw.classList.remove('active');
+                document.getElementById('speed-row').style.display = 'none';
+            }
+        }
+
+        function openSidebar() {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('overlay').classList.add('open');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('open');
+        }
+
+        function openSettings() {
+            closeSidebar();
+            document.getElementById('name-input').value = userName;
+            document.getElementById('settings-modal').classList.add('open');
+            updatePrintSwitchUI();
+            updateStats();
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.remove('open');
+        }
+
+        function saveSettings() {
+            const name = document.getElementById('name-input').value.trim();
+            if (name) {
+                userName = name;
+                localStorage.setItem('salomat_name', name);
+                if (document.getElementById('greeting-name')) document.getElementById('greeting-name').textContent = name;
+            }
+            closeSettings();
+            updateUI();
+        }
+
+        function toggleImgMode() {
+            imgMode = !imgMode;
+            document.getElementById('img-mode-btn').classList.toggle('active', imgMode);
+            if (imgMode) {
+                inputEl.placeholder = t('image_placeholder');
+                searchMode = false;
+                document.getElementById('search-btn').classList.remove('active');
+                webMode = false;
+                document.getElementById('web-btn').classList.remove('active');
+            } else if (searchMode) {
+                inputEl.placeholder = t('search_placeholder');
+            } else if (webMode) {
+                inputEl.placeholder = 'Введи запрос для веб-серфинга...';
+            } else {
+                inputEl.placeholder = t('placeholder');
+            }
+        }
+
+        function toggleVoice() {
+            voiceEnabled = !voiceEnabled;
+            document.getElementById('voice-mode-btn').classList.toggle('active', voiceEnabled);
+        }
+
+        function toggleSearchMode() {
+            searchMode = !searchMode;
+            document.getElementById('search-btn').classList.toggle('active', searchMode);
+            if (searchMode) {
+                inputEl.placeholder = t('search_placeholder');
+                imgMode = false;
+                document.getElementById('img-mode-btn').classList.remove('active');
+                webMode = false;
+                document.getElementById('web-btn').classList.remove('active');
+            } else if (imgMode) {
+                inputEl.placeholder = t('image_placeholder');
+            } else if (webMode) {
+                inputEl.placeholder = 'Введи запрос для веб-серфинга...';
+            } else {
+                inputEl.placeholder = t('placeholder');
+            }
+        }
+
+        function speak(text) {
+            if (!voiceEnabled || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const utt = new SpeechSynthesisUtterance(text);
+            utt.lang = 'ru-RU';
+            utt.rate = 0.95;
+            window.speechSynthesis.speak(utt);
+        }
+
+        function updateUI() {
+            const headerSub = document.querySelector('.header-sub'); if (headerSub) headerSub.textContent = modeMap[currentMode];
+            if (document.getElementById('welcome')) {
+                if (document.getElementById('greeting-name')) document.getElementById('greeting-name').textContent = userName || t('friend');
+            }
+            document.getElementById('mode-display').textContent = modeMap[currentMode];
+        }
+
+        // ========================================
+        // РЕДАКТИРОВАНИЕ
+        // ========================================
+        function startEdit(row, text) {
+            const bubble = row.querySelector('.bubble');
+            const contentDiv = bubble.querySelector('.msg-content');
+            const editBtn = bubble.querySelector('.edit-btn');
+            if (editBtn) editBtn.style.display = 'none';
+
+            const editForm = document.createElement('div');
+            editForm.className = 'edit-mode';
+            editForm.innerHTML = `
+                <textarea rows="3">${text}</textarea>
+                <div class="edit-actions">
+                    <button class="save-edit">Нигоҳ доштан</button>
+                    <button class="cancel-edit">Отмена</button>
+                </div>
+            `;
+
+            const textarea = editForm.querySelector('textarea');
+            const saveBtn = editForm.querySelector('.save-edit');
+            const cancelBtn = editForm.querySelector('.cancel-edit');
+
+            if (contentDiv) contentDiv.style.display = 'none';
+            bubble.appendChild(editForm);
+
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+            saveBtn.onclick = () => {
+                const newText = textarea.value.trim();
+                if (!newText) {
+                    alert('Сообщение не может быть пустым!');
+                    return;
+                }
+                const index = history.findIndex(m => m.content === text && m.role === 'user');
+                if (index !== -1) history[index].content = newText;
+                if (contentDiv) {
+                    contentDiv.textContent = newText;
+                    contentDiv.style.display = 'block';
+                }
+                editForm.remove();
+                if (editBtn) editBtn.style.display = 'block';
+                sendEditedMessage(newText);
+            };
+
+            cancelBtn.onclick = () => {
+                if (contentDiv) contentDiv.style.display = 'block';
+                editForm.remove();
+                if (editBtn) editBtn.style.display = 'block';
+            };
+
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.shiftKey) { e.preventDefault();
+                    saveBtn.click(); }
+                if (e.key === 'Escape') { cancelBtn.click(); }
+            });
+        }
+
+        async function sendEditedMessage(newText) {
+            const userIndex = history.findIndex(m => m.content === newText && m.role === 'user');
+            if (userIndex !== -1) {
+                const toRemove = history.slice(userIndex + 1);
+                history = history.slice(0, userIndex + 1);
+                const rows = document.querySelectorAll('.msg-row');
+                let found = false;
+                for (let row of rows) {
+                    if (row.classList.contains('user') && row.querySelector('.msg-content')?.textContent === newText) {
+                        found = true;
+                        continue;
+                    }
+                    if (found) row.remove();
+                }
+            }
+
+            showTypingIndicator();
+            const limitedHistory = history.slice(-8);
+
+            try {
+                const modeText = modeSystem[currentMode] || modeSystem.friendly;
+                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        messages: [
+                            { role: 'system',
+                                content: `Ту Salomat AI — ёвари ҳушманд ҳастӣ. ${modeText} Ҷавобро бо забони паёми корбар, бо афзалияти тоҷикӣ, равшан ва сохторнок навис. Аз сохтани фактҳо худдорӣ кун. ${currentLanguage === 'tj' ? TAJIKISTAN_CONTEXT : ''} ${userName ? 'Номи корбар ' + userName : ''}`
+                            },
+                            ...limitedHistory
+                        ],
+                        max_tokens: 512,
+                        temperature: 0.7
+                    })
+                });
+
+                const data = await res.json();
+                removeTypingIndicator();
+
+                if (data.choices?.[0]) {
+                    const reply = data.choices[0].message.content;
+                    history.push({ role: 'assistant', content: reply });
+                    const row = addMessage('ai', '', true, true);
+                    await typeText(row.querySelector('.bubble'), reply, 12);
+                    totalMessages += 2;
+                    localStorage.setItem('salomat_total_messages', totalMessages);
+                    playNotification();
+                    if (voiceEnabled) {
+                        const vBtn = document.createElement('button');
+                        vBtn.className = 'voice-btn';
+                        vBtn.innerHTML = 'Озвучить';
+                        vBtn.onclick = () => speak(reply);
+                        row.querySelector('.bubble').appendChild(vBtn);
+                        speak(reply.substring(0, 300));
+                    }
+                    saveCurrentChat();
+                } else {
+                    addMessage('ai', `Ошибка: ${data.error?.message || 'Попробуй ещё раз!'}`);
+                }
+            } catch(e) {
+                removeTypingIndicator();
+                addMessage('ai', 'Нет соединения с сервером. Проверь интернет!');
+            }
+        }
+
+        // ========================================
+        // ЧАТ
+        // ========================================
+        function newChat() {
+            if (history.length > 0) saveCurrentChat();
+            history = [];
+            uploadedFiles = [];
+            currentChatId = Date.now();
+            messagesEl.innerHTML = '';
+            document.getElementById('file-preview-area').style.display = 'none';
+            document.getElementById('file-preview-area').innerHTML = '';
+            const w = document.createElement('div');
+            w.className = 'welcome';
+            w.id = 'welcome';
+            w.innerHTML = `
+            <div class="welcome-logo">S</div>
+            <h2>Salomat AI</h2>
+            <div class="welcome-greeting">
+              ${t('welcome')}, <strong id="greeting-name">${userName || t('friend')}</strong><br>
+              Имрӯз дар чӣ кор ба шумо ёрӣ диҳам?
+            </div>
+            <div class="suggestions">
+              <button class="suggestion-btn" onclick="sendSuggestion('Придумай крутой ник для игры', this)">
+                Лақаб пешниҳод кун
+                <span class="spinner"></span>
+              </button>
+              <button class="suggestion-btn" onclick="sendSuggestion('Напиши код простого сайта', this)">
+                Рамзи сомона
+                <span class="spinner"></span>
+              </button>
+              <button class="suggestion-btn" onclick="sendSuggestion('Какой сейчас день?', this)">
+                Вақт ва сана
+                <span class="spinner"></span>
+              </button>
+            </div>
+          `;
+            messagesEl.appendChild(w);
+            closeSidebar();
+            updateUI();
+        }
+
+        function saveCurrentChat() {
+            if (!history.length) return;
+            let title = generateChatTitle(history);
+            if (!title || title.length < 2) title = history[0].content.substring(0, 30);
+            const chat = { id: currentChatId || Date.now(), title, history: [...history] };
+            const existingIndex = chatHistories.findIndex(c => c.id === chat.id);
+            if (existingIndex !== -1) chatHistories[existingIndex] = chat;
+            else chatHistories.unshift(chat);
+            if (chatHistories.length > 50) chatHistories = chatHistories.slice(0, 50);
+            localStorage.setItem('salomat_histories', JSON.stringify(chatHistories));
+            renderHistory();
+        }
+
+        function generateChatTitle(history) {
+            const userMessages = history.filter(m => m.role === 'user').slice(0, 2);
+            if (!userMessages.length) return '';
+            const fullText = userMessages.map(m => m.content).join(' ');
+            const topics = {
+                'день|дата|сегодня|время|час|душанбе|москва|сша|лондон': 'Время и даты',
+                'перевод|translate|переведи': 'Перевод текста',
+                'погода|дождь|солнце': 'Погода',
+                'код|html|css|javascript|сайт': 'Программирование',
+                'ник|free fire|игра': 'Игры',
+                'рисунок|картинка|арт': 'Эҷод',
+                'поиск|найти|google|новости': 'Ҷустуҷӯ',
+                'ссылка|http|https|сайт|url': 'Анализ ссылок',
+                'веб|серфинг|интернет': 'Интернет-серфинг'
+            };
+            for (let [pattern, topic] of Object.entries(topics)) {
+                if (new RegExp(pattern, 'i').test(fullText)) return topic;
+            }
+            return userMessages[0].content.substring(0, 30);
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = chatHistories.length ? '' :
+                `<div style="padding:8px 12px;font-size:12px;color:var(--text-secondary)">${t('no_history')}</div>`;
+            chatHistories.forEach(chat => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'history-item-wrapper';
+                wrapper.dataset.chatId = chat.id;
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.textContent = chat.title;
+                item.onclick = () => {
+                    history = [...chat.history];
+                    currentChatId = chat.id;
+                    messagesEl.innerHTML = '';
+                    chat.history.forEach(m => addMessage(m.role === 'user' ? 'user' : 'ai', m.content, false));
+                    closeSidebar();
+                };
+                let longPressTimer;
+                item.addEventListener('mousedown', () => {
+                    longPressTimer = setTimeout(() => wrapper.classList.toggle('show-delete'), 500);
+                });
+                item.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+                item.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
+                item.addEventListener('touchstart', () => {
+                    longPressTimer = setTimeout(() => wrapper.classList.toggle('show-delete'), 500);
+                });
+                item.addEventListener('touchend', () => clearTimeout(longPressTimer));
+                item.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+                wrapper.appendChild(item);
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-chat-btn';
+                deleteBtn.textContent = '✕ Удалить';
+                deleteBtn.onclick = (e) => { e.stopPropagation();
+                    deleteChat(chat.id, wrapper); };
+                wrapper.appendChild(deleteBtn);
+                list.appendChild(wrapper);
+            });
+            updateStats();
+        }
+
+        function deleteChat(chatId, wrapper) {
+            wrapper.classList.add('deleting');
+            setTimeout(() => {
+                chatHistories = chatHistories.filter(c => c.id !== chatId);
+                localStorage.setItem('salomat_histories', JSON.stringify(chatHistories));
+                renderHistory();
+                updateStats();
+            }, 300);
+        }
+
+        function sendSuggestion(text, btnElement) {
+            if (isLoading) return;
+            if (btnElement) btnElement.classList.add('loading');
+            inputEl.value = text;
+            setTimeout(() => {
+                sendMessage();
+                if (btnElement) btnElement.classList.remove('loading');
+            }, 200);
+        }
+
+        function removeWelcome() {
+            const w = document.getElementById('welcome');
+            if (w) w.remove();
+        }
+
+        function showTypingIndicator() {
+            removeWelcome();
+            removeTypingIndicator();
+            const row = document.createElement('div');
+            row.className = 'msg-row ai';
+            row.id = 'typing-row';
+            const avatar = document.createElement('div');
+            avatar.className = 'ai-avatar';
+            avatar.textContent = 'S';
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+            row.appendChild(avatar);
+            row.appendChild(bubble);
+            messagesEl.appendChild(row);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+            return row;
+        }
+
+        function removeTypingIndicator() {
+            const t = document.getElementById('typing-row');
+            if (t) t.remove();
+        }
+
+        function addMessage(role, text, animate = true, isPrinting = false) {
+            removeWelcome();
+            removeTypingIndicator();
+            const row = document.createElement('div');
+            row.className = `msg-row ${role}`;
+            if (!animate) row.style.animation = 'none';
+
+            if (role === 'ai') {
+                const avatar = document.createElement('div');
+                avatar.className = 'ai-avatar';
+                avatar.textContent = 'S';
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+
+                let formattedText = text;
+                formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                formattedText = formattedText.replace(/`([^`]+)`/g, '<code>$1</code>');
+                formattedText = formattedText.replace(/---/g, '<hr>');
+                formattedText = formattedText.replace(/### (.*?)(?:\n|$)/g, '<h3>$1</h3>');
+                formattedText = formattedText.replace(/## (.*?)(?:\n|$)/g, '<h2>$1</h2>');
+                formattedText = formattedText.replace(/^# (.*?)(?:\n|$)/gm, '<h1>$1</h1>');
+                formattedText = formattedText.replace(/^- (.*?)(?:\n|$)/gm, '<li>$1</li>');
+                formattedText = formattedText.replace(/^> (.*?)(?:\n|$)/gm, '<blockquote>$1</blockquote>');
+                formattedText = formattedText.replace(/\n\n/g, '</p><p>');
+                formattedText = `<p>${formattedText}</p>`;
+                formattedText = formattedText.replace(/<p><\/p>/g, '');
+
+                if (isPrinting) {
+                    bubble.textContent = '';
+                } else {
+                    bubble.innerHTML = formattedText;
+                }
+
+                const time = document.createElement('span');
+                time.className = 'time';
+                const now = new Date();
+                time.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString()
+                    .padStart(2, '0');
+                bubble.appendChild(time);
+
+                if (!isPrinting) {
+                    const actions = document.createElement('div');
+                    actions.className = 'message-actions';
+
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'action-btn';
+                    copyBtn.textContent = '📋';
+                    copyBtn.title = 'Копировать';
+                    copyBtn.onclick = () => copyText(text, copyBtn);
+                    actions.appendChild(copyBtn);
+
+                    const translateBtn = document.createElement('button');
+                    translateBtn.className = 'action-btn';
+                    translateBtn.textContent = '🌍';
+                    translateBtn.title = 'Перевести';
+                    translateBtn.onclick = () => translateText(text, translateBtn);
+                    actions.appendChild(translateBtn);
+
+                    const retellBtn = document.createElement('button');
+                    retellBtn.className = 'action-btn';
+                    retellBtn.textContent = '🔄';
+                    retellBtn.title = 'Пересказать';
+                    retellBtn.onclick = () => retellText(text, retellBtn);
+                    actions.appendChild(retellBtn);
+
+                    const explainBtn = document.createElement('button');
+                    explainBtn.className = 'action-btn';
+                    explainBtn.textContent = '💡';
+                    explainBtn.title = 'Объяснить';
+                    explainBtn.onclick = () => explainText(text, explainBtn);
+                    actions.appendChild(explainBtn);
+
+                    bubble.appendChild(actions);
+                }
+
+                if (voiceEnabled && !isPrinting) {
+                    const vBtn = document.createElement('button');
+                    vBtn.className = 'voice-btn';
+                    vBtn.innerHTML = 'Озвучить';
+                    vBtn.onclick = () => speak(text);
+                    bubble.appendChild(vBtn);
+                }
+
+                row.appendChild(avatar);
+                row.appendChild(bubble);
+                if (isPrinting) {
+                    row.dataset.bubble = 'printing';
+                    row.dataset.fullText = text;
+                }
+            } else {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'msg-content';
+                contentDiv.textContent = text;
+                bubble.appendChild(contentDiv);
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'edit-btn';
+                editBtn.textContent = '✎';
+                editBtn.title = 'Редактировать';
+                editBtn.onclick = () => startEdit(row, text);
+                bubble.appendChild(editBtn);
+
+                const time = document.createElement('span');
+                time.className = 'time';
+                const now = new Date();
+                time.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString()
+                    .padStart(2, '0');
+                bubble.appendChild(time);
+
+                row.appendChild(bubble);
+            }
+            messagesEl.appendChild(row);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+            return row;
+        }
+
+        async function typeText(bubbleElement, text, speed = 12) {
+            return new Promise((resolve) => {
+                if (!printingEnabled || speed <= 0) {
+                    let formattedText = text;
+                    formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                    formattedText = formattedText.replace(/`([^`]+)`/g, '<code>$1</code>');
+                    formattedText = formattedText.replace(/---/g, '<hr>');
+                    formattedText = formattedText.replace(/### (.*?)(?:\n|$)/g, '<h3>$1</h3>');
+                    formattedText = formattedText.replace(/## (.*?)(?:\n|$)/g, '<h2>$1</h2>');
+                    formattedText = formattedText.replace(/^# (.*?)(?:\n|$)/gm, '<h1>$1</h1>');
+                    formattedText = formattedText.replace(/^- (.*?)(?:\n|$)/gm, '<li>$1</li>');
+                    formattedText = formattedText.replace(/^> (.*?)(?:\n|$)/gm, '<blockquote>$1</blockquote>');
+                    formattedText = formattedText.replace(/\n\n/g, '</p><p>');
+                    formattedText = `<p>${formattedText}</p>`;
+                    formattedText = formattedText.replace(/<p><\/p>/g, '');
+
+                    bubbleElement.innerHTML = formattedText;
+                    const time = document.createElement('span');
+                    time.className = 'time';
+                    const now = new Date();
+                    time.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString()
+                        .padStart(2, '0');
+                    bubbleElement.appendChild(time);
+
+                    const actions = document.createElement('div');
+                    actions.className = 'message-actions';
+
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'action-btn';
+                    copyBtn.textContent = '📋';
+                    copyBtn.title = 'Копировать';
+                    copyBtn.onclick = () => copyText(text, copyBtn);
+                    actions.appendChild(copyBtn);
+
+                    const translateBtn = document.createElement('button');
+                    translateBtn.className = 'action-btn';
+                    translateBtn.textContent = '🌍';
+                    translateBtn.title = 'Перевести';
+                    translateBtn.onclick = () => translateText(text, translateBtn);
+                    actions.appendChild(translateBtn);
+
+                    const retellBtn = document.createElement('button');
+                    retellBtn.className = 'action-btn';
+                    retellBtn.textContent = '🔄';
+                    retellBtn.title = 'Пересказать';
+                    retellBtn.onclick = () => retellText(text, retellBtn);
+                    actions.appendChild(retellBtn);
+
+                    const explainBtn = document.createElement('button');
+                    explainBtn.className = 'action-btn';
+                    explainBtn.textContent = '💡';
+                    explainBtn.title = 'Объяснить';
+                    explainBtn.onclick = () => explainText(text, explainBtn);
+                    actions.appendChild(explainBtn);
+
+                    bubbleElement.appendChild(actions);
+                    resolve();
+                    return;
+                }
+                let index = 0;
+                const chars = text.split('');
+                const cursor = document.createElement('span');
+                cursor.className = 'typing-cursor';
+                bubbleElement.appendChild(cursor);
+
+                function typeNextChar() {
+                    if (index >= chars.length) {
+                        if (cursor.parentNode) cursor.remove();
+                        let formattedText = text;
+                        formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                        formattedText = formattedText.replace(/`([^`]+)`/g, '<code>$1</code>');
+                        formattedText = formattedText.replace(/---/g, '<hr>');
+                        formattedText = formattedText.replace(/### (.*?)(?:\n|$)/g, '<h3>$1</h3>');
+                        formattedText = formattedText.replace(/## (.*?)(?:\n|$)/g, '<h2>$1</h2>');
+                        formattedText = formattedText.replace(/^# (.*?)(?:\n|$)/gm, '<h1>$1</h1>');
+                        formattedText = formattedText.replace(/^- (.*?)(?:\n|$)/gm, '<li>$1</li>');
+                        formattedText = formattedText.replace(/^> (.*?)(?:\n|$)/gm, '<blockquote>$1</blockquote>');
+                        formattedText = formattedText.replace(/\n\n/g, '</p><p>');
+                        formattedText = `<p>${formattedText}</p>`;
+                        formattedText = formattedText.replace(/<p><\/p>/g, '');
+
+                        bubbleElement.innerHTML = formattedText;
+                        const time = document.createElement('span');
+                        time.className = 'time';
+                        const now = new Date();
+                        time.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString()
+                            .padStart(2, '0');
+                        bubbleElement.appendChild(time);
+
+                        const actions = document.createElement('div');
+                        actions.className = 'message-actions';
+
+                        const copyBtn = document.createElement('button');
+                        copyBtn.className = 'action-btn';
+                        copyBtn.textContent = '📋';
+                        copyBtn.title = 'Копировать';
+                        copyBtn.onclick = () => copyText(text, copyBtn);
+                        actions.appendChild(copyBtn);
+
+                        const translateBtn = document.createElement('button');
+                        translateBtn.className = 'action-btn';
+                        translateBtn.textContent = '🌍';
+                        translateBtn.title = 'Перевести';
+                        translateBtn.onclick = () => translateText(text, translateBtn);
+                        actions.appendChild(translateBtn);
+
+                        const retellBtn = document.createElement('button');
+                        retellBtn.className = 'action-btn';
+                        retellBtn.textContent = '🔄';
+                        retellBtn.title = 'Пересказать';
+                        retellBtn.onclick = () => retellText(text, retellBtn);
+                        actions.appendChild(retellBtn);
+
+                        const explainBtn = document.createElement('button');
+                        explainBtn.className = 'action-btn';
+                        explainBtn.textContent = '💡';
+                        explainBtn.title = 'Объяснить';
+                        explainBtn.onclick = () => explainText(text, explainBtn);
+                        actions.appendChild(explainBtn);
+
+                        bubbleElement.appendChild(actions);
+                        resolve();
+                        return;
+                    }
+                    const textNode = document.createTextNode(chars[index]);
+                    bubbleElement.insertBefore(textNode, cursor);
+                    index++;
+                    messagesEl.scrollTop = messagesEl.scrollHeight;
+                    setTimeout(typeNextChar, Math.max(3, speed));
+                }
+                typeNextChar();
+            });
+        }
+
+        function addImageMessage(prompt, imgUrl) {
+            removeWelcome();
+            removeTypingIndicator();
+            const row = document.createElement('div');
+            row.className = 'msg-row ai';
+            const avatar = document.createElement('div');
+            avatar.className = 'ai-avatar';
+            avatar.textContent = 'S';
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.innerHTML = `Вот что я нарисовал:\n`;
+            const img = document.createElement('img');
+            img.className = 'generated-img';
+            img.src = imgUrl;
+            img.alt = prompt;
+            img.onerror = () => { bubble.textContent = 'Не удалось загрузить картинку.'; };
+            bubble.appendChild(img);
+            const time = document.createElement('span');
+            time.className = 'time';
+            const now = new Date();
+            time.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2,
+                '0');
+            bubble.appendChild(time);
+
+            const actions = document.createElement('div');
+            actions.className = 'message-actions';
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'action-btn';
+            copyBtn.textContent = '📋';
+            copyBtn.title = 'Копировать';
+            copyBtn.onclick = () => copyText(prompt, copyBtn);
+            actions.appendChild(copyBtn);
+
+            const translateBtn = document.createElement('button');
+            translateBtn.className = 'action-btn';
+            translateBtn.textContent = '🌍';
+            translateBtn.title = 'Перевести';
+            translateBtn.onclick = () => translateText(prompt, translateBtn);
+            actions.appendChild(translateBtn);
+
+            bubble.appendChild(actions);
+
+            row.appendChild(avatar);
+            row.appendChild(bubble);
+            messagesEl.appendChild(row);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        async function generateImage(prompt) {
+            const enhancedPrompt = encodeURIComponent(prompt + ', high quality, detailed, beautiful');
+            const styles = ['realistic', 'anime', 'digital-art', 'cinematic'];
+            const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+            return `https://image.pollinations.ai/prompt/${enhancedPrompt}?width=1024&height=1024&nologo=true&seed=${Date.now()}&enhance=true&style=${randomStyle}`;
+        }
+
+        // ========================================
+        // ГЛАВНАЯ ФУНКЦИЯ ОТПРАВКИ
+        // ========================================
+        async function sendMessage() {
+            const text = inputEl.value.trim();
+            if ((!text && uploadedFiles.length === 0) || isLoading) return;
+
+            if (!currentChatId) currentChatId = Date.now();
+
+            isLoading = true;
+            sendBtn.disabled = true;
+            if (text) {
+                inputEl.value = '';
+                inputEl.style.height = 'auto';
+                addMessage('user', text);
+                history.push({ role: 'user', content: text });
+            }
+            showTypingIndicator();
+
+            // ВРЕМЯ
+            if (text && (text.toLowerCase().includes('день') || text.toLowerCase().includes('дата') ||
+                    text.toLowerCase().includes('время') || text.toLowerCase().includes('час') ||
+                    text.toLowerCase().includes('сегодня') || text.toLowerCase().includes('какой день') ||
+                    text.toLowerCase().includes('число') || text.toLowerCase().includes('который час') ||
+                    text.toLowerCase().includes('душанбе') || text.toLowerCase().includes('москва') ||
+                    text.toLowerCase().includes('сша') || text.toLowerCase().includes('лондон') ||
+                    text.toLowerCase().includes('нью-йорк'))) {
+
+                const timeInfo = getTimeInfo(text);
+                removeTypingIndicator();
+                history.push({ role: 'assistant', content: timeInfo });
+                const row = addMessage('ai', '', true, true);
+                await typeText(row.querySelector('.bubble'), timeInfo, 12);
+                totalMessages += 2;
+                localStorage.setItem('salomat_total_messages', totalMessages);
+                playNotification();
+                saveCurrentChat();
+                isLoading = false;
+                sendBtn.disabled = false;
+                return;
+            }
+
+            // ВЕБ-СЕРФИНГ
+            if (webMode && text) {
+                try {
+                    const webResult = await webSurfing(text);
+                    removeTypingIndicator();
+                    history.push({ role: 'assistant', content: webResult });
+                    const row = addMessage('ai', '', true, true);
+                    await typeText(row.querySelector('.bubble'), webResult, 12);
+                    totalMessages += 2;
+                    localStorage.setItem('salomat_total_messages', totalMessages);
+                    playNotification();
+                    saveCurrentChat();
+                } catch(e) {
+                    removeTypingIndicator();
+                    history.push({ role: 'assistant', content: 'Ошибка веб-серфинга.' });
+                    addMessage('ai', 'Ошибка веб-серфинга.');
+                }
+                isLoading = false;
+                sendBtn.disabled = false;
+                return;
+            }
+
+            // ССЫЛКИ
+            const urlPattern = /https?:\/\/[^\s]+/g;
+            const urls = text ? text.match(urlPattern) : [];
+            if (text && urls && urls.length > 0 && !searchMode && !imgMode && !webMode) {
+                try {
+                    const linkResult = await analyzeAndAnswerLink(urls[0]);
+                    removeTypingIndicator();
+                    history.push({ role: 'assistant', content: linkResult });
+                    const row = addMessage('ai', '', true, true);
+                    await typeText(row.querySelector('.bubble'), linkResult, 12);
+                    totalMessages += 2;
+                    localStorage.setItem('salomat_total_messages', totalMessages);
+                    playNotification();
+                    saveCurrentChat();
+                } catch(e) {
+                    removeTypingIndicator();
+                    history.push({ role: 'assistant', content: 'Ошибка анализа ссылки.' });
+                    addMessage('ai', 'Ошибка анализа ссылки.');
+                }
+                isLoading = false;
+                sendBtn.disabled = false;
+                return;
+            }
+
+            // ПОИСК
+            if (searchMode && text) {
+                try {
+                    const searchResult = await searchAndAnswer(text);
+                    removeTypingIndicator();
+                    history.push({ role: 'assistant', content: searchResult });
+                    const row = addMessage('ai', '', true, true);
+                    await typeText(row.querySelector('.bubble'), searchResult, 12);
+                    totalMessages += 2;
+                    localStorage.setItem('salomat_total_messages', totalMessages);
+                    playNotification();
+                    saveCurrentChat();
+                } catch(e) {
+                    removeTypingIndicator();
+                    history.push({ role: 'assistant', content: 'Ошибка поиска.' });
+                    addMessage('ai', 'Ошибка поиска.');
+                }
+                isLoading = false;
+                sendBtn.disabled = false;
+                return;
+            }
+
+            // АВТО-ПОИСК
+            if (text && (text.toLowerCase().includes('найди') || text.toLowerCase().includes('поищи') ||
+                    text.toLowerCase().includes('найти') || text.toLowerCase().includes('поиск') ||
+                    text.toLowerCase().includes('погода') || text.toLowerCase().includes('новости'))) {
+                try {
+                    const searchResult = await searchAndAnswer(text);
+                    removeTypingIndicator();
+                    history.push({ role: 'assistant', content: searchResult });
+                    const row = addMessage('ai', '', true, true);
+                    await typeText(row.querySelector('.bubble'), searchResult, 12);
+                    totalMessages += 2;
+                    localStorage.setItem('salomat_total_messages', totalMessages);
+                    playNotification();
+                    saveCurrentChat();
+                } catch(e) {
+                    removeTypingIndicator();
+                    history.push({ role: 'assistant', content: 'Ошибка поиска.' });
+                    addMessage('ai', 'Ошибка поиска.');
+                }
+                isLoading = false;
+                sendBtn.disabled = false;
+                return;
+            }
+
+            // ГЕНЕРАЦИЯ
+            if (imgMode && text) {
+                try {
+                    removeTypingIndicator();
+                    const imgUrl = await generateImage(text);
+                    addImageMessage(text, imgUrl);
+                    history.push({ role: 'assistant', content: 'Сгенерировал картинку' });
+                    totalMessages += 2;
+                    localStorage.setItem('salomat_total_messages', totalMessages);
+                    playNotification();
+                    saveCurrentChat();
+                } catch(e) {
+                    removeTypingIndicator();
+                    history.push({ role: 'assistant', content: 'Ошибка генерации картинки.' });
+                    addMessage('ai', 'Ошибка генерации картинки.');
+                }
+                isLoading = false;
+                sendBtn.disabled = false;
+                return;
+            }
+
+            // СОЗДАТЕЛЬ
+            if (text && (text.toLowerCase().includes('кто тебя создал') || text.toLowerCase().includes('кто создал') ||
+                    text.toLowerCase().includes('создатель'))) {
+                removeTypingIndicator();
+                history.push({ role: 'assistant', content: CREATOR_INFO });
+                const row = addMessage('ai', '', true, true);
+                await typeText(row.querySelector('.bubble'), CREATOR_INFO, 12);
+                totalMessages += 2;
+                localStorage.setItem('salomat_total_messages', totalMessages);
+                playNotification();
+                if (voiceEnabled) speak(CREATOR_INFO.substring(0, 300));
+                saveCurrentChat();
+                isLoading = false;
+                sendBtn.disabled = false;
+                return;
+            }
+
+            // ОБЫЧНЫЙ ОТВЕТ
+            const limitedHistory = history.slice(-8);
+
+            try {
+                const modeText = modeSystem[currentMode] || modeSystem.friendly;
+                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        messages: [
+                            { role: 'system',
+                                content: `Ту Salomat AI — ёвари ҳушманд ҳастӣ. ${modeText} Ҷавобро бо забони паёми корбар, бо афзалияти тоҷикӣ, равшан ва сохторнок навис. Аз сохтани фактҳо худдорӣ кун. ${currentLanguage === 'tj' ? TAJIKISTAN_CONTEXT : ''} ${userName ? 'Номи корбар ' + userName : ''}`
+                            },
+                            ...limitedHistory
+                        ],
+                        max_tokens: 512,
+                        temperature: 0.7
+                    })
+                });
+
+                const data = await res.json();
+                removeTypingIndicator();
+
+                if (data.choices?.[0]) {
+                    const reply = data.choices[0].message.content;
+                    history.push({ role: 'assistant', content: reply });
+                    const row = addMessage('ai', '', true, true);
+                    await typeText(row.querySelector('.bubble'), reply, 12);
+                    totalMessages += 2;
+                    localStorage.setItem('salomat_total_messages', totalMessages);
+                    playNotification();
+                    if (voiceEnabled) {
+                        const vBtn = document.createElement('button');
+                        vBtn.className = 'voice-btn';
+                        vBtn.innerHTML = 'Озвучить';
+                        vBtn.onclick = () => speak(reply);
+                        row.querySelector('.bubble').appendChild(vBtn);
+                        speak(reply.substring(0, 300));
+                    }
+                    saveCurrentChat();
+                } else {
+                    addMessage('ai', `Ошибка: ${data.error?.message || 'Попробуй ещё раз!'}`);
+                }
+            } catch(e) {
+                removeTypingIndicator();
+                addMessage('ai', 'Нет соединения с сервером. Проверь интернет!');
+            }
+
+            isLoading = false;
+            sendBtn.disabled = false;
+            inputEl.focus();
+        }
+
+        // Инициализация
+        updateUI();
+    </script>
+<style>
+#sa-auth{position:fixed;inset:0;z-index:9999;background:#080c12;display:flex;align-items:center;justify-content:center;padding:20px;color:#eaf1ff;font-family:Inter,Arial,sans-serif}#sa-auth[hidden]{display:none}#sa-auth .sa-card{width:min(100%,420px);background:#101a28;border:1px solid #26364d;border-radius:22px;padding:25px;box-shadow:0 24px 80px #0009}#sa-auth h2{font-size:25px;margin:0 0 8px}#sa-auth p{color:#9aabc2;font-size:13px;line-height:1.5;margin:0 0 20px}#sa-auth input,#sa-auth select{width:100%;padding:14px;margin:6px 0;border:1px solid #31445e;border-radius:11px;background:#0b1320;color:#fff;font-size:14px;outline:none}#sa-auth button,.sa-btn{border:0;border-radius:11px;padding:13px 16px;background:#1264ff;color:#fff;font-weight:700;cursor:pointer}#sa-auth .sa-main{width:100%;margin-top:10px}#sa-auth .sa-switch{width:100%;background:transparent;color:#8db5ff;margin-top:10px}#sa-auth .sa-error{color:#ff8b8b;min-height:18px;font-size:12px;margin-top:8px}#sa-account{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:8px 12px;border-top:1px solid var(--border)}#sa-account button{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:9px;font-size:12px}#sa-admin{position:fixed;inset:0;z-index:5000;background:#080c12;color:#eaf1ff;display:none;overflow:auto;padding:18px;font-family:Inter,Arial,sans-serif}#sa-admin.open{display:block}#sa-admin .sa-admin-head{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:900px;margin:0 auto 18px}#sa-admin .sa-panel{max-width:900px;margin:auto;background:#101a28;border:1px solid #26364d;border-radius:16px;padding:16px;margin-bottom:14px}#sa-admin h2,#sa-admin h3{margin:0 0 12px}#sa-admin .sa-user{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid #29394f;flex-wrap:wrap;font-size:13px}#sa-admin button{border:0;border-radius:8px;padding:8px 10px;background:#1264ff;color:white;margin:3px}#sa-admin button.danger{background:#a83245}#sa-admin small{color:#9aabc2}
+</style>
+<div id="sa-auth">
+ <div class="sa-card">
+  <div style="font-size:12px;letter-spacing:2px;color:#70a4ff;margin-bottom:10px">SALOMAT TECH · TAJIKISTAN</div>
+  <h2 id="sa-auth-title">Вход в Salomat AI</h2><p id="sa-auth-desc">Войдите, чтобы сохранять чаты и настройки в облаке.</p>
+  <input id="sa-fullname" placeholder="Ном и фамилия" autocomplete="name" style="display:none">
+  <input id="sa-email" type="email" placeholder="Email" autocomplete="email">
+  <input id="sa-password" type="password" placeholder="Пароль (не менее 6 символов)" autocomplete="current-password">
+  <button class="sa-main" id="sa-auth-submit">Ворид шудан</button>
+  <button class="sa-google" id="sa-google">Воридшавӣ бо Google</button>
+  <button class="sa-switch" id="sa-auth-switch">Создать аккаунт</button>
+  <div class="sa-error" id="sa-auth-error"></div>
+  <div style="font-size:11px;color:#70839d;margin-top:12px">Хидматрасонӣ барои Тоҷикистон · Вақти Душанбе (UTC+5)</div>
+ </div>
+</div>
+<div id="sa-admin">
+ <div class="sa-admin-head"><div><small>SALOMAT AI · CONTROL CENTER</small><h2>Панель администратора</h2></div><button class="sa-btn" onclick="saCloseAdmin()">Пӯшидан</button></div>
+ <div class="sa-panel"><h3>Омор</h3><div id="sa-stats">Загрузка…</div></div>
+ <div class="sa-panel"><h3>Истифодабарандагон ва назорат</h3><div id="sa-users">Бор шуда истодааст…</div></div>
+ <div class="sa-panel"><h3>Танзими ҳуқуқҳо ва баҳогузории сайёҳӣ</h3><p>Барои фаъол шудани таъйини модератор ва шарҳҳои муштарак, SQL-и ин бахшро як бор дар Supabase → SQL Editor иҷро кунед. Барои аввалин администратор, почтаи худро дар SQL иваз намоед.</p><textarea id="sa-setup-sql" readonly style="width:100%;min-height:260px;background:#08111d;color:#cfe0ff;border:1px solid #30445f;border-radius:10px;padding:10px;font-size:11px"></textarea><button onclick="saCopySetupSql()">Нусха бардоштан</button></div>
+</div>
+
+<style>
+#tj-places{position:fixed;inset:0;z-index:4500;background:#080d16;color:#eaf1ff;display:none;overflow:auto;padding:16px;font-family:Inter,Arial,sans-serif}
+#tj-places.open{display:block}.tj-wrap{max-width:1100px;margin:auto}.tj-head{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:-16px;background:#080d16;padding:12px 0;z-index:2}.tj-head h2{font-size:22px}.tj-btn{border:0;border-radius:10px;background:#1264ff;color:white;padding:10px 14px;font-weight:700}.tj-search{width:100%;padding:13px;border:1px solid #2b3d55;background:#101a28;color:white;border-radius:12px;margin:12px 0}.tj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.tj-card{background:#101a28;border:1px solid #26364d;border-radius:16px;overflow:hidden;cursor:pointer}.tj-card img{width:100%;height:155px;object-fit:cover;display:block}.tj-card div{padding:12px}.tj-card h3{font-size:16px;margin-bottom:5px}.tj-card p,.tj-muted{color:#a6b6ca;font-size:12px;line-height:1.5}.tj-detail{position:fixed;inset:0;background:#070b12;z-index:4600;display:none;overflow:auto;padding:16px}.tj-detail.open{display:block}.tj-detail-inner{max-width:850px;margin:auto}.tj-gallery{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin:12px 0}.tj-gallery img{width:100%;height:210px;object-fit:cover;border-radius:12px}.tj-gallery .tj-side{display:grid;gap:8px}.tj-gallery .tj-side img{height:101px}.tj-detail h2{margin:12px 0}.tj-stars button{background:none;border:0;color:#f5b942;font-size:28px;padding:2px}.tj-detail textarea{width:100%;min-height:80px;background:#101a28;color:white;border:1px solid #2b3d55;border-radius:10px;padding:10px;margin:8px 0}.tj-map{width:100%;height:260px;border:0;border-radius:12px;margin:12px 0}.tj-review{border-top:1px solid #2b3d55;padding:10px 0;font-size:13px}.tj-map-link{color:#82afff}
+@media(max-width:600px){.tj-gallery{grid-template-columns:1fr}.tj-gallery img{height:190px}.tj-gallery .tj-side{grid-template-columns:1fr 1fr}.tj-gallery .tj-side img{height:115px}}
+</style>
+<div id="tj-places"><div class="tj-wrap"><div class="tj-head"><div><small style="color:#7daeff">SALOMAT AI · САЙЁҲИИ ТОҶИКИСТОН</small><h2>Ганҷинаи Тоҷикистон</h2></div><button class="tj-btn" onclick="closeTajikistanPlaces()">Бастан ✕</button></div><p class="tj-muted">Ҷойҳои табиӣ, таърихӣ ва фарҳангии кишвар. Ҷустуҷӯ кунед ё маконро интихоб намоед.</p><input id="tj-place-search" class="tj-search" placeholder="Ҷустуҷӯи шаҳр, кӯл, қалъа, ноҳия…" oninput="renderTjPlaces()"><div id="tj-place-grid" class="tj-grid"></div><h3 style="margin:22px 0 8px">Харитаи Тоҷикистон</h3><iframe class="tj-map" title="Харитаи Тоҷикистон" src="https://www.openstreetmap.org/export/embed.html?bbox=67.3%2C36.6%2C75.2%2C41.1&layer=mapnik"></iframe><p class="tj-muted">Харита аз OpenStreetMap. Барои роҳнамоӣ ва масирҳои муфассал пайванди харитаи ҳар маконро кушоед.</p></div></div>
+<div id="tj-place-detail" class="tj-detail"><div class="tj-detail-inner"><button class="tj-btn" onclick="closeTjPlaceDetail()">← Бозгашт</button><div id="tj-detail-content"></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(()=>{
+ 'use strict';
+ const SUPABASE_URL='https://wcybcrehnezttoiobluz.supabase.co';
+ const SUPABASE_KEY='sb_publishable_t5Qf_2ibfEJJEbg0qAVVCA__QJxue-w';
+ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+ let saUser=null,saProfile=null,saMode='login',saCloudChatId=null,saBusy=false;
+ const $=id=>document.getElementById(id);
+ function authError(msg){const el=$('sa-auth-error');if(el)el.textContent=msg||'';else console.error('SALOMAT AUTH:',msg)}
+ function authMode(mode){saMode=mode;const signup=mode==='signup';$('sa-auth-title').textContent=signup?'Бақайдгирӣ':'Воридшавӣ ба Salomat AI';$('sa-auth-desc').textContent=signup?'Ҳисоб созед — суҳбатҳоятон дар дастгоҳҳои гуногун дастрас мешаванд.':'Барои нигоҳ доштани суҳбатҳо ба ҳисоб ворид шавед.';$('sa-fullname').style.display=signup?'block':'none';$('sa-auth-submit').textContent=signup?'Бақайдгирӣ':'Ворид шудан';$('sa-auth-switch').textContent=signup?'Аллакай ҳисоб доред? Ворид шавед':'Эҷоди ҳисоб';$('sa-password').autocomplete=signup?'new-password':'current-password';$('sa-fullname').placeholder='Ному насаб';$('sa-email').placeholder='Почтаи электронӣ';$('sa-password').placeholder='Рамз (на кам аз 6 аломат)';authError('')}
+ $('sa-auth-switch').onclick=()=>authMode(saMode==='login'?'signup':'login');
+ $('sa-google').onclick=async()=>{try{const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href}});if(error)throw error}catch(e){authError('Воридшавӣ бо Google ноком шуд: '+e.message)}};
+ $('sa-auth-submit').onclick=async()=>{if(saBusy)return;saBusy=true;const btn=$('sa-auth-submit');btn.disabled=true;authError('');try{const email=$('sa-email').value.trim(),password=$('sa-password').value,full_name=$('sa-fullname').value.trim();if(!email||!password)throw Error('Почтаи электронӣ ва рамзро ворид кунед.');if(saMode==='signup'){if(password.length<6)throw Error('Рамз бояд на кам аз 6 аломат бошад.');const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name}}});if(error)throw error;if(data.session){await saAfterLogin(data.session.user)}else authError('Ҳисоб сохта шуд. Почтаи электрониро тасдиқ карда, ворид шавед.')}else{const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;await saAfterLogin(data.user)}}catch(e){authError(e.message||'Не удалось выполнить вход.')}finally{saBusy=false;btn.disabled=false}};
+ async function saAfterLogin(user){if(saUser?.id!==user.id){chatHistories=JSON.parse(localStorage.getItem('salomat_histories_'+user.id)||'[]');history=[];currentChatId=null;if(messagesEl)messagesEl.innerHTML=''}saUser=user;const full_name=user.user_metadata?.full_name||user.email?.split('@')[0]||'Корбар';let {data,error}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();if(error)console.warn('profiles select:',error.message);if(!data){const ins=await sb.from('profiles').upsert({id:user.id,full_name,role:'user',plan:'free',is_banned:false},{onConflict:'id'}).select().maybeSingle();if(ins.error)console.warn('profiles upsert:',ins.error.message);data=ins.data||{id:user.id,full_name,role:'user',plan:'free',is_banned:false}}saProfile=data;if(data.is_banned){await sb.auth.signOut();saUser=null;throw new Error('Ваш аккаунт заблокирован. Причина: '+(data.ban_reason||'не указана'))}userName=data.full_name||full_name;localStorage.setItem('salomat_name',userName);if($('greeting-name'))$('greeting-name').textContent=userName;$('sa-auth').hidden=true;saAddAccountControls();await saLoadChats();if(typeof updateUI==='function')updateUI()}
+ function saAddAccountControls(){const box=document.querySelector('.sidebar-bottom');if(!box||$('sa-account'))return;const row=document.createElement('div');row.id='sa-account';row.innerHTML='<button onclick="saOpenAdmin()" id="sa-admin-btn" style="display:none">Администрирование</button><button onclick="saSignOut()">Выйти из аккаунта</button>';box.appendChild(row);if(saProfile?.role==='admin'||saProfile?.role==='moderator')$('sa-admin-btn').style.display='inline-block'}
+ window.saSignOut=async()=>{if(history?.length&&typeof saveCurrentChat==='function')saveCurrentChat();await sb.auth.signOut();location.reload()};
+ async function saLoadChats(){const key='salomat_histories_'+saUser.id;const {data,error}=await sb.from('ai_chats').select('*').eq('user_id',saUser.id).order('updated_at',{ascending:false}).limit(50);if(error){console.warn('Боркунии чатҳо:',error.message);chatHistories=JSON.parse(localStorage.getItem(key)||'[]');if(typeof renderHistory==='function')renderHistory();return}const cloud=[];for(const c of data||[]){const m=await sb.from('ai_messages').select('*').eq('chat_id',c.id).eq('user_id',saUser.id).order('created_at',{ascending:true});if(m.error){console.warn(m.error.message);continue}cloud.push({id:c.id,title:c.title||'Чати нав',history:(m.data||[]).map(x=>({role:x.sender==='assistant'?'assistant':'user',content:x.content||''}))})}chatHistories=cloud;localStorage.setItem(key,JSON.stringify(chatHistories));localStorage.setItem('salomat_histories_'+saUser.id,JSON.stringify(chatHistories));localStorage.setItem('salomat_histories',JSON.stringify(chatHistories));if(typeof renderHistory==='function')renderHistory()}
+ async function saPersistChat(chat){if(!saUser||!chat?.history?.length)return;try{let chatId=typeof chat.id==='string'&&chat.id.length>20?chat.id:null;if(!chatId){const {data,error}=await sb.from('ai_chats').insert({user_id:saUser.id,title:chat.title||'Новый чат'}).select('id').single();if(error)throw error;chatId=data.id;chat.id=chatId;currentChatId=chatId;localStorage.setItem('salomat_histories',JSON.stringify(chatHistories))}else{const up=await sb.from('ai_chats').upsert({id:chatId,user_id:saUser.id,title:chat.title||'Новый чат',updated_at:new Date().toISOString()},{onConflict:'id'});if(up.error)throw up.error}const {data:existing,error:readErr}=await sb.from('ai_messages').select('sender,content').eq('chat_id',chatId);if(readErr)throw readErr;const known=new Set((existing||[]).map(m=>m.sender+'|'+m.content));const fresh=chat.history.filter(m=>!known.has((m.role==='assistant'?'assistant':'user')+'|'+m.content));if(fresh.length){const rows=fresh.map(m=>({chat_id:chatId,user_id:saUser.id,sender:m.role==='assistant'?'assistant':'user',content:String(m.content||'')}));const ins=await sb.from('ai_messages').insert(rows);if(ins.error)throw ins.error}}catch(e){console.warn('Облачное сохранение чата:',e.message)}}
+ const originalSave=window.saveCurrentChat;window.saveCurrentChat=function(){if(typeof originalSave==='function')originalSave();if(saUser)localStorage.setItem('salomat_histories_'+saUser.id,JSON.stringify(chatHistories));const chat=chatHistories?.find(c=>String(c.id)===String(currentChatId))||chatHistories?.[0];if(chat)saPersistChat(chat)};
+ window.saOpenAdmin=async()=>{if(!saProfile||!['admin','moderator'].includes(saProfile.role)){alert('Нет доступа.');return}$('sa-admin').classList.add('open');await saRefreshAdmin()};window.saCloseAdmin=()=>$('sa-admin').classList.remove('open');
+ window.saRefreshAdmin=async()=>{const count=await sb.from('profiles').select('id',{count:'exact',head:true});if($('sa-stats'))$('sa-stats').textContent='Ҳамагӣ ҳисобҳо: '+(count.count??'—')+' · Нақши шумо: '+saProfile.role;const {data,error}=await sb.from('profiles').select('id,full_name,role,plan,is_banned,ban_reason,created_at').order('created_at',{ascending:false}).limit(100);if(error){if($('sa-users'))$('sa-users').textContent='Рӯйхат бор нашуд: '+error.message;return}$('sa-users').innerHTML='';(data||[]).forEach(p=>{const row=document.createElement('div');row.className='sa-user';const info=document.createElement('div');info.innerHTML='<b></b><br><small></small>';info.querySelector('b').textContent=p.full_name||'Без имени';info.querySelector('small').textContent=p.id+' · '+(p.role||'user')+' · '+(p.plan||'free')+' · '+(p.is_banned?'ЗАБЛОКИРОВАН':'Активен');row.appendChild(info);const actions=document.createElement('div');if(saProfile.role==='admin'&&p.id!==saUser.id){const role=document.createElement('button');role.textContent='Сделать '+(p.role==='moderator'?'пользователем':'модератором');role.onclick=()=>saUpdateProfile(p.id,{role:p.role==='moderator'?'user':'moderator'});actions.appendChild(role)}if(p.id!==saUser.id){const ban=document.createElement('button');ban.className=p.is_banned?'':'danger';ban.textContent=p.is_banned?'Разблокировать':'Блокировать';ban.onclick=()=>saUpdateProfile(p.id,{is_banned:!p.is_banned,ban_reason:!p.is_banned?'Нарушение правил Salomat AI':null});actions.appendChild(ban)}row.appendChild(actions);$('sa-users').appendChild(row)})};
+ async function saUpdateProfile(id,patch){if(saProfile.role!=='admin'&&Object.keys(patch).some(k=>k!=='is_banned'&&k!=='ban_reason'))return alert('Ҳуқуқи кофӣ нест.');const {data,error}=await sb.rpc('sa_admin_update_profile',{target_user_id:id,new_role:patch.role??null,new_banned:patch.is_banned??null,new_ban_reason:patch.ban_reason??null});if(error){alert('Функсияи серверӣ ҳоло насб нашудааст. SQL-и поёни панелро дар Supabase иҷро кунед.\n'+error.message);return}await saRefreshAdmin()}
+ sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'&&session?.user&&!saUser)saAfterLogin(session.user).catch(e=>authError(e.message))});
+ (async()=>{const {data,error}=await sb.auth.getSession();if(error){authError(error.message);return}if(data.session)await saAfterLogin(data.session.user);else if($('sa-auth'))$('sa-auth').hidden=false})();
+
+ const saSetupSql = `-- 1) Аввалин администратор: EMAIL-РО ИВАЗ КУНЕД ва ин сатрро иҷро намоед.
+update public.profiles p set role='admin'
+from auth.users u where p.id=u.id and u.email='YOUR_EMAIL@example.com';
+
+-- 2) Функсияи серверӣ барои таъйини модератор ва блок/разблок.
+create or replace function public.sa_admin_update_profile(
+ target_user_id uuid, new_role text default null,
+ new_banned boolean default null, new_ban_reason text default null)
+returns void language plpgsql security definer set search_path=public as $$
+declare actor_role text;
+begin
+ select role into actor_role from public.profiles where id=auth.uid();
+ if actor_role not in ('admin','moderator') then raise exception 'Дастрасӣ манъ аст'; end if;
+ if new_role is not null and actor_role <> 'admin' then raise exception 'Танҳо администратор нақшро иваз мекунад'; end if;
+ if new_role is not null and new_role not in ('user','moderator') then raise exception 'Нақши нодуруст'; end if;
+ update public.profiles set
+ role=coalesce(new_role,role),
+ is_banned=coalesce(new_banned,is_banned),
+ ban_reason=case when new_banned=false then null when new_ban_reason is not null then new_ban_reason else ban_reason end,
+ updated_at=now() where id=target_user_id;
+end; $$;
+revoke all on function public.sa_admin_update_profile(uuid,text,boolean,text) from public;
+grant execute on function public.sa_admin_update_profile(uuid,text,boolean,text) to authenticated;
+
+-- Дастрасии хондани рӯйхати профилҳо барои кормандони панел.
+create or replace function public.sa_is_staff() returns boolean language sql stable security definer set search_path=public as $$ select exists(select 1 from public.profiles where id=auth.uid() and role in ('admin','moderator')) $$;
+drop policy if exists profiles_staff_read on public.profiles;
+create policy profiles_staff_read on public.profiles for select to authenticated using (id=auth.uid() or public.sa_is_staff());
+
+-- 3) Баҳогузорӣ ва шарҳҳои ҷойҳои сайёҳӣ.
+create table if not exists public.tourism_reviews(
+ id bigint generated by default as identity primary key,
+ place_id text not null, user_id uuid not null references auth.users(id) on delete cascade,
+ rating int not null check(rating between 1 and 5), comment text not null default '',
+ created_at timestamptz not null default now());
+alter table public.tourism_reviews enable row level security;
+drop policy if exists tourism_reviews_read on public.tourism_reviews;
+create policy tourism_reviews_read on public.tourism_reviews for select using (true);
+drop policy if exists tourism_reviews_insert on public.tourism_reviews;
+create policy tourism_reviews_insert on public.tourism_reviews for insert to authenticated with check (auth.uid()=user_id);
+drop policy if exists tourism_reviews_delete on public.tourism_reviews;
+create policy tourism_reviews_delete on public.tourism_reviews for delete to authenticated using (auth.uid()=user_id);`;
+ $('sa-setup-sql').value=saSetupSql;
+ window.saCopySetupSql=async()=>{try{await navigator.clipboard.writeText(saSetupSql);alert('SQL нусха шуд. Дар Supabase → SQL Editor иҷро кунед.')}catch(e){$('sa-setup-sql').select();document.execCommand('copy');alert('SQL нусха шуд.')}};
+ const tjPlaces=[
+ {id:'iskanderkul',name:'Кӯли Искандаркӯл',region:'Вилояти Суғд · ноҳияи Айнӣ',kind:'Табиат',lat:39.08,lon:68.37,desc:'Кӯли кӯҳии машҳур дар кӯҳҳои Фон, дар баландии тақрибан 2 195 метр. Манзараҳои кӯҳӣ ва шаршараи наздик онро ба яке аз маконҳои маъруфи сайёҳии кишвар табдил додаанд.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/Iskandarkul%20001.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Iskandarkul%20lake.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Iskandarkul%20lake%202.jpg']},
+ {id:'haftkul',name:'Ҳафткӯл (Кӯлҳои Марғузор)',region:'Вилояти Суғд · Панҷакент',kind:'Табиат',lat:39.20,lon:68.30,desc:'Занҷираи ҳафт кӯли кӯҳӣ дар водии Шинг. Ранги об ва манзараи ҳар кӯл фарқ мекунад; роҳ ба баъзе кӯлҳо кӯҳӣ ва мавсимӣ буда метавонад.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/%D0%A1%D0%B5%D0%BC%D1%8C%20%D0%BE%D0%B7%D1%91%D1%80.%20%D0%98%D1%81%D0%BA%D0%B0%D0%BD%D0%B4%D0%B5%D1%80%D0%BA%D1%83%D0%BB%D1%8C%D1%81%D0%BA%D0%B8%D0%B9%20%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%D0%BD%D0%B8%D0%BA.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/%D0%9A%D3%AF%D0%BB%D2%B3%D0%BE%D0%B8%20%D0%9C%D0%B0%D1%80%D2%93%D1%83%D0%B7%D0%BE%D1%80%2027.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/%D0%A1%D0%B5%D0%BC%D1%8C%20%D0%BE%D0%B7%D1%91%D1%80.%20%D0%98%D1%81%D0%BA%D0%B0%D0%BD%D0%B4%D0%B5%D1%80%D0%BA%D1%83%D0%BB%D1%8C%D1%81%D0%BA%D0%B8%D0%B9%20%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%D0%BD%D0%B8%D0%BA%202.jpg']},
+ {id:'hissar',name:'Қалъаи Ҳисор',region:'Ноҳияи Ҳисор',kind:'Таърих',lat:38.525,lon:68.55,desc:'Маҷмааи таърихӣ бо дарвозаи бошукӯҳ ва мадрасаҳои қадима. Қалъа яке аз рамзҳои шинохтаи мероси таърихии Тоҷикистон аст.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/Hissar%20Fortress.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Hissar%20fortress%20Tajikistan.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Gissar%20fortress.jpg']},
+ {id:'sarez',name:'Кӯли Сарез',region:'ВМКБ · ноҳияи Рӯшон',kind:'Табиат',lat:38.25,lon:72.75,desc:'Кӯли баландкӯҳи Помир, ки пас аз заминларзаи соли 1911 ва пайдо шудани садди Усой ба вуҷуд омадааст. Сафар ба ин минтақа иҷозат ва омодагии махсус талаб мекунад.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/Sarez%20Lake.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Lake%20Sarez%20Tajikistan.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Usой%20dam%20Sarez.jpg']},
+ {id:'pamir',name:'Роҳи Помир (M41)',region:'ВМКБ · Помир',kind:'Саёҳат',lat:38.56,lon:71.0,desc:'Яке аз роҳҳои баландкӯҳи машҳури Осиёи Марказӣ. Манзараҳои Помир, ағбаҳо ва деҳаҳои кӯҳӣ таҷрибаи нотакрор медиҳанд. Пеш аз сафар вазъи роҳро санҷед.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/Pamir%20Highway.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Pamir%20highway%20Tajikistan.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Ak-Baital%20Pass.jpg']},
+ {id:'dushanbe',name:'Душанбе ва Боғи Рӯдакӣ',region:'Шаҳри Душанбе',kind:'Шаҳр',lat:38.573,lon:68.787,desc:'Пойтахти Тоҷикистон бо боғҳо, осорхонаҳо, майдонҳо ва меъмории муосир. Боғи Рӯдакӣ яке аз маконҳои марказии истироҳат аст.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/Rudaki%20Park%20Dushanbe.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Dushanbe%20Tajikistan.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Flagpole%20Dushanbe.jpg']},
+ {id:'khujand',name:'Хуҷанд ва Қалъаи Хуҷанд',region:'Вилояти Суғд · шаҳри Хуҷанд',kind:'Таърих',lat:40.283,lon:69.623,desc:'Яке аз шаҳрҳои қадимии Осиёи Марказӣ, дар соҳили дарёи Сир. Қалъа, Осорхонаи таърихӣ ва маҷмааи Шайх Муслиҳиддин аз ҷойҳои ҷолиби шаҳр мебошанд.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/Khujand%20fortress.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Khujand%20Tajikistan.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Syr%20Darya%20Khujand.jpg']},
+ {id:'sarazm',name:'Саразм',region:'Вилояти Суғд · Панҷакент',kind:'Мероси ҷаҳонӣ',lat:39.51,lon:67.46,desc:'Ёдгории бостоншиносӣ ва яке аз қадимтарин марказҳои муқиминишинӣ дар минтақа. Саразм ба Феҳристи мероси ҷаҳонии ЮНЕСКО дохил шудааст.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/Sarazm%20Tajikistan.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Sarazm%20archaeological%20site.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Sarazm%20UNESCO.jpg']},
+ {id:'anjob',name:'Ағбаи Анзоб ва нақби Истиқлол',region:'Роҳи Душанбе–Хуҷанд',kind:'Манзара',lat:39.08,lon:68.80,desc:'Минтақаи баландкӯҳи шоҳроҳи Душанбе–Хуҷанд. Манзараҳои кӯҳӣ таъсирбахшанд; шароити обу ҳаво ва ҳаракати нақлиётро пешакӣ санҷед.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/Anzob%20Pass%20Tajikistan.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Anzob%20tunnel.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Mount%20road%20Dushanbe%20Khujand.jpg']},
+ {id:'varzob',name:'Дараи Варзоб',region:'Ноҳияи Варзоб',kind:'Табиат',lat:38.79,lon:68.82,desc:'Дараи кӯҳӣ дар наздикии Душанбе, бо дарё, нишебиҳои сабз ва минтақаҳои истироҳатӣ. Барои истироҳати кӯтоҳ маъмул аст.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/Varzob.JPG','https://commons.wikimedia.org/wiki/Special:FilePath/Varzob%20Tajikistan.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Varzob%20valley.jpg']},
+ {id:'bulunkul',name:'Булункӯл ва Яшилкӯл',region:'ВМКБ · ноҳияи Мурғоб',kind:'Табиат',lat:37.71,lon:72.96,desc:'Кӯлҳои баландкӯҳи Помир бо табиати хос, ҳавои сард ва манзараҳои васеъ. Барои сафар нақлиёти мувофиқ ва омодагӣ ба баландӣ зарур аст.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/Bulunkul%20Lake.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Yashilkul%20Lake.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Pamir%20lakes%20Tajikistan.jpg']},
+ {id:'ajinateppa',name:'Аҷинатеппа',region:'Вилояти Хатлон · Вахш',kind:'Бостоншиносӣ',lat:37.83,lon:68.78,desc:'Маъбади буддоии асримиёнагӣ, ки бо бозёфти муҷассамаи бузурги Буддо машҳур аст. Осори он дар Осорхонаи миллии Тоҷикистон нигоҳдорӣ мешавад.',imgs:['https://commons.wikimedia.org/wiki/Special:FilePath/Ajina%20Teppa.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Ajinateppa%20Buddha.jpg','https://commons.wikimedia.org/wiki/Special:FilePath/Buddha%20in%20Nirvana%20Tajikistan.jpg']}
+ ];
+ window.openTajikistanPlaces=()=>{document.getElementById('tj-places').classList.add('open');renderTjPlaces()};window.closeTajikistanPlaces=()=>document.getElementById('tj-places').classList.remove('open');
+ window.renderTjPlaces=()=>{const q=(document.getElementById('tj-place-search').value||'').toLowerCase();const box=document.getElementById('tj-place-grid');box.innerHTML='';tjPlaces.filter(x=>(x.name+' '+x.region+' '+x.kind).toLowerCase().includes(q)).forEach(x=>{const c=document.createElement('article');c.className='tj-card';c.onclick=()=>openTjPlace(x.id);c.innerHTML=`<img loading="lazy" src="${x.imgs[0]}" alt="${x.name}" onerror="this.src='https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800'"> <div><h3>${x.name}</h3><p>${x.region} · ${x.kind}</p></div>`;box.appendChild(c)})};
+ window.openTjPlace=async id=>{const p=tjPlaces.find(x=>x.id===id);if(!p)return;const d=document.getElementById('tj-detail-content');d.innerHTML=`<h2>${p.name}</h2><p class="tj-muted">${p.region} · ${p.kind}</p><div class="tj-gallery"><img src="${p.imgs[0]}" onerror="this.style.display='none'"><div class="tj-side"><img src="${p.imgs[1]}" onerror="this.style.display='none'"><img src="${p.imgs[2]}" onerror="this.style.display='none'"></div></div><p style="line-height:1.65">${p.desc}</p><p style="margin:10px 0"><a class="tj-map-link" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lon}#map=11/${p.lat}/${p.lon}">Кушодан дар харита ↗</a></p><h3 style="margin-top:20px">Баҳо диҳед</h3><div class="tj-stars" id="tj-stars">${[1,2,3,4,5].map(n=>`<button onclick="tjRating=${n};paintTjStars()" aria-label="${n} ситора">☆</button>`).join('')}</div><textarea id="tj-comment" placeholder="Назари худро нависед…"></textarea><button class="tj-btn" onclick="submitTjReview('${p.id}')">Фиристодани баҳо</button><h3 style="margin-top:20px">Назари меҳмонон</h3><div id="tj-reviews">Бор шуда истодааст…</div><h3 style="margin-top:20px">Ҷойгиршавӣ</h3><iframe class="tj-map" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${p.lon-.08}%2C${p.lat-.06}%2C${p.lon+.08}%2C${p.lat+.06}&layer=mapnik&marker=${p.lat}%2C${p.lon}"></iframe>`;window.tjRating=0;document.getElementById('tj-place-detail').classList.add('open');loadTjReviews(id)};
+ window.closeTjPlaceDetail=()=>document.getElementById('tj-place-detail').classList.remove('open');window.paintTjStars=()=>document.querySelectorAll('#tj-stars button').forEach((b,i)=>b.textContent=i<tjRating?'★':'☆');
+ async function loadTjReviews(id){const box=document.getElementById('tj-reviews');const {data,error}=await sb.from('tourism_reviews').select('rating,comment,created_at').eq('place_id',id).order('created_at',{ascending:false}).limit(30);if(error){box.innerHTML='<p class="tj-muted">Барои шарҳҳои муштарак администратор бояд SQL-и танзимро иҷро кунад.</p>';return}box.innerHTML=(data||[]).length?(data||[]).map(r=>`<div class="tj-review"><b>${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</b><p>${escapeTj(r.comment||'')}</p><small class="tj-muted">${new Date(r.created_at).toLocaleDateString('tg-TJ')}</small></div>`).join(''):'<p class="tj-muted">Ҳоло шарҳ нест. Аввалин шуда фикр нависед.</p>'}
+ function escapeTj(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+ window.submitTjReview=async id=>{if(!saUser){alert('Барои баҳогузорӣ аввал ворид шавед.');return}if(!tjRating){alert('Аз 1 то 5 ситора интихоб кунед.');return}const comment=document.getElementById('tj-comment').value.trim();const {error}=await sb.from('tourism_reviews').insert({place_id:id,user_id:saUser.id,rating:tjRating,comment});if(error){alert('Шарҳ сабт нашуд. SQL-и танзимро иҷро кунед. '+error.message);return}document.getElementById('tj-comment').value='';tjRating=0;paintTjStars();await loadTjReviews(id)};
+})();
+</script>
+
+</body>
+    </html>
